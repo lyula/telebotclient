@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
+import { API_BASE_URL } from "./api";
 
 // Theme colors
 const PRIMARY = "#0d6efd";
@@ -31,10 +32,13 @@ function Dashboard({ user, onLogout }) {
   const [activeChatId, setActiveChatId] = useState(null);
   const [message, setMessage] = useState("");
   const [mobileView, setMobileView] = useState("list");
+  const [scheduleType, setScheduleType] = useState("now"); // "now", "datetime", "interval"
+  const [scheduleDateTime, setScheduleDateTime] = useState("");
+  const [interval, setInterval] = useState("every_minute");
 
   useEffect(() => {
-    const interval = setInterval(() => setGreeting(getGreeting()), 60 * 1000);
-    return () => clearInterval(interval);
+    const greetingInterval = setInterval(() => setGreeting(getGreeting()), 60 * 1000);
+    return () => clearInterval(greetingInterval);
   }, []);
 
   useEffect(() => {
@@ -58,14 +62,38 @@ function Dashboard({ user, onLogout }) {
 
   const activeChat = chats.find((c) => c.id === activeChatId);
 
-  const handleSend = (e) => {
+  // Helper to get cron string
+  const getCronString = () => {
+    if (scheduleType === "now") return "* * * * *";
+    if (scheduleType === "datetime" && scheduleDateTime) {
+      const dt = new Date(scheduleDateTime);
+      return `${dt.getMinutes()} ${dt.getHours()} ${dt.getDate()} ${dt.getMonth() + 1} *`;
+    }
+    // Interval options
+    switch (interval) {
+      case "every_minute":
+        return "* * * * *";
+      case "every_5_minutes":
+        return "*/5 * * * *";
+      case "every_hour":
+        return "0 * * * *";
+      case "every_day":
+        return "0 0 * * *";
+      default:
+        return "* * * * *";
+    }
+  };
+
+  const handleSend = async (e) => {
     e.preventDefault();
     if (!message.trim() || !activeChat) return;
+
     const newMsg = {
       text: message,
-      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      time: new Date().toISOString(), // Store as ISO string
       sent: true,
     };
+
     setChats((prev) =>
       prev.map((chat) =>
         chat.id === activeChatId
@@ -79,6 +107,24 @@ function Dashboard({ user, onLogout }) {
       )
     );
     setMessage("");
+
+    try {
+      const token = localStorage.getItem("token");
+      await fetch(`${API_BASE_URL}/messages/schedule`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          groupId: activeChatId,
+          message: message,
+          scheduleTime: getCronString(),
+        }),
+      });
+    } catch (err) {
+      console.error("Failed to send message:", err);
+    }
   };
 
   const handleNewChat = () => {
@@ -232,26 +278,15 @@ function Dashboard({ user, onLogout }) {
                 style={{ cursor: "pointer" }}
                 onClick={() => setActiveChatId(chat.id)}
               >
-                <div
-                  className="rounded-circle d-flex align-items-center justify-content-center me-3"
-                  style={{
-                    width: 48,
-                    height: 48,
-                    background: PRIMARY,
-                    color: "#fff",
-                    fontWeight: "bold",
-                    fontSize: 20,
-                  }}
-                >
-                  {chat.name[0]}
-                </div>
                 <div className="flex-grow-1">
                   <div className="fw-semibold">{chat.name}</div>
-                  <div className="small text-truncate text-secondary" style={{ maxWidth: 200 }}>
+                  <div className="text-secondary small" style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                     {chat.lastMessage}
                   </div>
                 </div>
-                <div className="small text-secondary ms-2">{chat.time}</div>
+                <div className="text-end small text-secondary ms-2" style={{ minWidth: 60 }}>
+                  {chat.time}
+                </div>
               </div>
             ))
           )}
@@ -339,7 +374,17 @@ function Dashboard({ user, onLogout }) {
               </div>
               <div>
                 <div className="fw-semibold">{activeChat.name}</div>
-                <div className="small text-secondary">{activeChat.time}</div>
+                <div className="small text-secondary">
+                  {activeChat.time
+                    ? new Date(activeChat.time).toLocaleString(undefined, {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })
+                    : ""}
+                </div>
               </div>
             </>
           ) : (
@@ -374,7 +419,15 @@ function Dashboard({ user, onLogout }) {
                 >
                   <div>{msg.text}</div>
                   <div className="text-end small text-secondary" style={{ opacity: 0.75 }}>
-                    {msg.time}
+                    {msg.time
+                      ? new Date(msg.time).toLocaleString(undefined, {
+                          year: "numeric",
+                          month: "short",
+                          day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })
+                      : ""}
                   </div>
                 </div>
               </div>
@@ -387,8 +440,8 @@ function Dashboard({ user, onLogout }) {
         </div>
         {/* Message input */}
         {activeChat && (
-          <div
-            className="p-3 border-top d-flex bg-white"
+          <form
+            className="p-3 border-top d-flex bg-white flex-column flex-md-row align-items-center"
             style={{
               position: "sticky",
               bottom: 0,
@@ -396,23 +449,50 @@ function Dashboard({ user, onLogout }) {
               right: 0,
               zIndex: 10,
               background: "#fff",
-              alignItems: "center",
               gap: "12px",
-              display: "flex",
             }}
+            onSubmit={handleSend}
           >
             <input
-              className="form-control rounded-pill border-0 message-input"
+              className="form-control rounded-pill border-0 message-input mb-2 mb-md-0"
               style={{ background: "#f5f7fa", flex: 1, minWidth: 0 }}
               placeholder="Type a message..."
               value={message}
               onChange={(e) => setMessage(e.target.value)}
             />
+            <select
+              className="form-select w-auto mb-2 mb-md-0"
+              value={scheduleType}
+              onChange={(e) => setScheduleType(e.target.value)}
+            >
+              <option value="now">Send Now</option>
+              <option value="datetime">Schedule Date/Time</option>
+              <option value="interval">Repeat Interval</option>
+            </select>
+            {scheduleType === "datetime" && (
+              <input
+                type="datetime-local"
+                className="form-control w-auto mb-2 mb-md-0"
+                value={scheduleDateTime}
+                onChange={(e) => setScheduleDateTime(e.target.value)}
+              />
+            )}
+            {scheduleType === "interval" && (
+              <select
+                className="form-select w-auto mb-2 mb-md-0"
+                value={interval}
+                onChange={(e) => setInterval(e.target.value)}
+              >
+                <option value="every_minute">Every Minute</option>
+                <option value="every_5_minutes">Every 5 Minutes</option>
+                <option value="every_hour">Every Hour</option>
+                <option value="every_day">Every Day</option>
+              </select>
+            )}
             <button
               className="btn rounded-circle d-flex align-items-center justify-content-center"
               style={{ background: PRIMARY, color: "#fff", width: 40, height: 40, flexShrink: 0 }}
-              type="button"
-              onClick={handleSend}
+              type="submit"
             >
               <svg
                 width="22"
@@ -424,7 +504,7 @@ function Dashboard({ user, onLogout }) {
                 <path d="M2.293 10.293a1 1 0 011.32-.083l.094.083 11-7a1 1 0 011.497.868v14a1 1 0 01-1.497.868l-11-7a1 1 0 01-.094-1.651z" />
               </svg>
             </button>
-          </div>
+          </form>
         )}
       </main>
     </div>

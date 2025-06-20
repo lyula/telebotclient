@@ -3,13 +3,31 @@ import Register from "./Register";
 import Login from "./Login";
 import Dashboard from "./Dashboard";
 
+const API_BASE_URL = 'https://telebot-0ev9.onrender.com/api';
+
 function App() {
   const [showLogin, setShowLogin] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
-  const [user, setUser] = useState({ username: "John" }); // Replace with real user data
+  const [user, setUser] = useState(null);
+
+  const handleLogin = (data) => {
+    if (data.user) {
+      setUser(data.user);
+      localStorage.setItem("token", data.token);
+      setLoggedIn(true);
+    } else {
+      alert(data.message || "Login failed");
+    }
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    setLoggedIn(false);
+    localStorage.removeItem("token");
+  };
 
   if (loggedIn) {
-    return <Dashboard user={user} onLogout={() => setLoggedIn(false)} />;
+    return <Dashboard user={user} onLogout={handleLogout} />;
   }
 
   return (
@@ -17,7 +35,7 @@ function App() {
       {showLogin ? (
         <Login
           switchToRegister={() => setShowLogin(false)}
-          onLogin={() => setLoggedIn(true)}
+          onLogin={handleLogin}
         />
       ) : (
         <Register switchToLogin={() => setShowLogin(true)} />
