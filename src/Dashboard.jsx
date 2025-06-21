@@ -4,6 +4,7 @@ import { API_BASE_URL } from "./api";
 import GroupModal from "./GroupModal";
 import ChatMessages from "./ChatMessages";
 import ChatList from "./ChatList";
+import NotificationModal from "./NotificationModal";
 
 // Theme colors
 const PRIMARY = "#0d6efd";
@@ -87,6 +88,7 @@ function Dashboard({ user, onLogout }) {
   const [customIntervalUnit, setCustomIntervalUnit] = useState("minutes");
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [scheduledMessages, setScheduledMessages] = useState([]);
+  const [notification, setNotification] = useState({ show: false, message: "" });
 
   useEffect(() => {
     const greetingInterval = setInterval(() => setGreeting(getGreeting()), 60 * 1000);
@@ -273,7 +275,9 @@ function Dashboard({ user, onLogout }) {
         }),
       });
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const data = await response.json();
+        setNotification({ show: true, message: data.error || data.msg || "Failed to send message. Please try again." });
+        return;
       }
 
       const resMsg = await fetch(`${API_BASE_URL}/messages/group/${activeChatId}`, {
@@ -317,7 +321,8 @@ function Dashboard({ user, onLogout }) {
       }
     } catch (err) {
       console.error("Failed to send message:", err);
-      alert("Failed to send message. Please try again.");
+      const errorMessage = err.message || "Failed to send message. Please try again.";
+      setNotification({ show: true, message: errorMessage });
     }
   };
 
@@ -790,6 +795,12 @@ function Dashboard({ user, onLogout }) {
         setNewGroupId={setNewGroupId}
         groupIdError={groupIdError}
         creatingGroup={creatingGroup}
+      />
+
+      <NotificationModal
+        show={notification.show}
+        message={notification.message}
+        onClose={() => setNotification({ show: false, message: "" })}
       />
     </>
   );
