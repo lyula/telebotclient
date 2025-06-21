@@ -225,17 +225,16 @@ function Dashboard({ user, onLogout }) {
       });
       const data = await res.json();
       if (res.ok) {
-        setChats((prev) => [
-          {
-            id: data.groupId,
-            name: data.displayName,
-            lastMessage: "",
-            time: "",
-            messages: [],
-          },
-          ...prev,
-        ]);
-        setActiveChatId(data.groupId);
+        // Use 'id' as the key, not 'groupId'
+        const newGroup = {
+          id: data.groupId, // Make sure this matches what your backend returns
+          name: data.displayName,
+          lastMessage: "",
+          time: "",
+          messages: [],
+        };
+        setChats((prev) => [newGroup, ...prev]);
+        setActiveChatId(newGroup.id); // Use newGroup.id
         handleCloseGroupModal();
         if (window.innerWidth < 768) setMobileView("chat");
       } else {
@@ -496,7 +495,7 @@ function Dashboard({ user, onLogout }) {
                   fontSize: "18px",
                 }}
               >
-                {activeChat.name[0]}
+                {activeChat?.name ? activeChat.name[0] : ""}
               </div>
               <div>
                 <div className="fw-semibold">{activeChat.name}</div>
