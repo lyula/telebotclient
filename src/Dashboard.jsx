@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { API_BASE_URL } from "./api";
+import GroupModal from "./GroupModal";
+import ChatMessages from "./ChatMessages";
+import ChatList from "./ChatList";
 
 // Theme colors
 const PRIMARY = "#0d6efd";
@@ -51,6 +54,12 @@ const sampleChats = [
   },
 ];
 
+// Add this helper for group ID validation
+function isValidTelegramGroupId(id) {
+  // Accepts -100... (digits), or @username (letters, numbers, underscores, min 5 chars)
+  return /^-100\d{5,}$/.test(id) || /^@[a-zA-Z0-9_]{5,}$/.test(id);
+}
+
 function Dashboard({ user, onLogout }) {
   const [greeting, setGreeting] = useState(getGreeting());
   const [chats, setChats] = useState(sampleChats);
@@ -66,6 +75,9 @@ function Dashboard({ user, onLogout }) {
   const [creatingGroup, setCreatingGroup] = useState(false);
   const [messagesByGroup, setMessagesByGroup] = useState({});
   const [isSchedulerOpen, setIsSchedulerOpen] = useState(false);
+  const [groupIdError, setGroupIdError] = useState("");
+  const [customIntervalValue, setCustomIntervalValue] = useState("");
+  const [customIntervalUnit, setCustomIntervalUnit] = useState("minutes");
 
   useEffect(() => {
     const greetingInterval = setInterval(() => setGreeting(getGreeting()), 60 * 1000);
@@ -165,24 +177,46 @@ function Dashboard({ user, onLogout }) {
     }
   };
 
+  // Update getCronString for custom intervals
   const getCronString = () => {
     if (scheduleType === "now") return "* * * * *";
     if (scheduleType === "datetime" && scheduleDateTime) {
       const dt = new Date(scheduleDateTime);
       return `${dt.getMinutes()} ${dt.getHours()} ${dt.getDate()} ${dt.getMonth() + 1} *`;
     }
-    switch (interval) {
-      case "every_minute":
-        return "* * * * *";
-      case "every_5_minutes":
-        return "*/5 * * * *";
-      case "every_hour":
-        return "0 * * * *";
-      case "every_day":
-        return "0 0 * * *";
-      default:
-        return "* * * * *";
+    if (scheduleType === "interval") {
+      switch (interval) {
+        case "every_minute":
+          return "* * * * *";
+        case "every_3_minutes":
+          return "*/3 * * * *";
+        case "every_5_minutes":
+          return "*/5 * * * *";
+        case "every_10_minutes":
+          return "*/10 * * * *";
+        case "every_15_minutes":
+          return "*/15 * * * *";
+        case "every_30_minutes":
+          return "*/30 * * * *";
+        case "every_hour":
+          return "0 * * * *";
+        case "every_day":
+          return "0 0 * * *";
+        case "custom":
+          if (!customIntervalValue || isNaN(customIntervalValue) || customIntervalValue <= 0)
+            return "* * * * *";
+          if (customIntervalUnit === "minutes")
+            return `*/${customIntervalValue} * * * *`;
+          if (customIntervalUnit === "hours")
+            return `0 */${customIntervalValue} * * *`;
+          if (customIntervalUnit === "days")
+            return `0 0 */${customIntervalValue} * *`;
+          return "* * * * *";
+        default:
+          return "* * * * *";
+      }
     }
+    return "* * * * *";
   };
 
   const handleSend = async (e) => {
@@ -244,12 +278,20 @@ function Dashboard({ user, onLogout }) {
     setNewGroupId("");
   };
 
+  // Update handleCreateGroup to validate group ID
   const handleCreateGroup = async (e) => {
     e.preventDefault();
     if (!newGroupName.trim() || !newGroupId.trim()) {
       alert("Please fill in all fields");
       return;
     }
+    if (!isValidTelegramGroupId(newGroupId.trim())) {
+      setGroupIdError(
+        "Invalid Group ID. Use -100... for group ID or @username for public groups."
+      );
+      return;
+    }
+    setGroupIdError("");
     setCreatingGroup(true);
     try {
       const token = localStorage.getItem("token");
@@ -298,6 +340,10 @@ function Dashboard({ user, onLogout }) {
       document.body.style.overflow = '';
     };
   }, [showGroupModal]);
+
+  const isSendDisabled = () => {
+    return !message.trim();
+  };
 
   return (
     <>
@@ -428,111 +474,18 @@ function Dashboard({ user, onLogout }) {
           `}
         </style>
         {/* Sidebar (Chat List) */}
-        <aside
-          className={`d-flex flex-column bg-white ${
-            mobileView === "chat" && window.innerWidth < 768 ? "d-none" : "d-flex"
-          } w-100 col-md-4 col-lg-3 col-xl-2`}
-          style={{
-            width: window.innerWidth < 768 ? "100vw" : undefined,
-            maxWidth: window.innerWidth < 768 ? "100vw" : "360px",
-            height: "100vh",
-            position: "fixed",
-            zIndex: 2,
-            borderRight: "1px solid #dee2e6",
-            top: "0",
-            left: "0",
-            overflow: "hidden",
-          }}
-        >
-          {/* Header */}
-          <div
-            className="d-flex align-items-center justify-content-between px-3 py-3"
-            style={{ background: PRIMARY, color: "#fff" }}
-          >
-            <span className="fw-semibold fs-5">{user?.username || "User"}</span>
-            <button className="btn btn-outline-light btn-sm" onClick={onLogout}>
-              Logout
-            </button>
-          </div>
-          {/* Greeting */}
-          <div className="px-3 py-2 text-secondary border-bottom small">
-            {greeting}
-          </div>
-          {/* Chat List */}
-          <div className="flex-grow-1 overflow-auto bg-white" style={{ paddingBottom: "80px" }}>
-            {chats.length === 0 ? (
-              <div className="text-center text-muted mt-5">No chats yet. Start a new chat!</div>
-            ) : (
-              chats.map((chat) => (
-                <div
-                  key={chat.id}
-                  className={`d-flex align-items-center px-3 py-3 border-bottom ${
-                    chat.id === activeChatId ? "bg-light" : ""
-                  }`}
-                  style={{ cursor: "pointer" }}
-                  onClick={() => handleSelectChat(chat.id)}
-                >
-                  <div className="flex-grow-1">
-                    <div className="fw-semibold">{chat.name}</div>
-                    <div
-                      className="text-secondary small"
-                      style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
-                    >
-                      {chat.lastMessage}
-                    </div>
-                  </div>
-                  <div className="text-end small text-secondary ms-2" style={{ minWidth: "60px" }}>
-                    {chat.time ? formatWhatsAppDate(new Date(chat.time)) : ""}
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-          {/* "+" button: INSIDE chatlist for desktop, floating for mobile */}
-          {window.innerWidth < 768 ? (
-            <button
-              className="btn rounded-circle new-chat-btn"
-              onClick={handleOpenGroupModal}
-              title="Create new group"
-              type="button"
-            >
-              <svg width="28" height="28" fill="currentColor" viewBox="0 0 20 20">
-                <path
-                  d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
-                />
-              </svg>
-            </button>
-          ) : (
-            <>
-              {/* Floating "+" button for desktop */}
-              <button
-                className="btn btn-primary rounded-circle new-chat-btn"
-                style={{
-                  width: "56px",
-                  height: "56px",
-                  fontSize: "28px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  position: "absolute",
-                  bottom: "24px",
-                  right: "24px",
-                  zIndex: 1050,
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-                }}
-                onClick={handleOpenGroupModal}
-                title="Create new group"
-                type="button"
-              >
-                <svg width="28" height="28" fill="currentColor" viewBox="0 0 20 20">
-                  <path
-                    d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
-                  />
-                </svg>
-              </button>
-            </>
-          )}
-        </aside>
+        <ChatList
+          chats={chats}
+          activeChatId={activeChatId}
+          handleSelectChat={handleSelectChat}
+          formatWhatsAppDate={formatWhatsAppDate}
+          handleOpenGroupModal={handleOpenGroupModal}
+          user={user}
+          onLogout={onLogout}
+          greeting={greeting}
+          mobileView={mobileView}
+          PRIMARY={PRIMARY}
+        />
 
         {/* Chat Area */}
         <main
@@ -600,60 +553,11 @@ function Dashboard({ user, onLogout }) {
               paddingBottom: "120px",
             }}
           >
-            {activeChat && activeMessages.length > 0 ? (
-              activeMessages.map((msg, idx) => (
-                <React.Fragment key={idx}>
-                  <div
-                    className={`d-flex mb-2 ${msg.sent ? "justify-content-end" : "justify-content-start"}`}
-                  >
-                    <div
-                      className={`d-flex flex-column py-2 px-3 rounded-3 position-relative ${
-                        msg.sent ? "chat-bubble-sent" : "chat-bubble-received"
-                      }`}
-                      style={{
-                        background: msg.sent ? PRIMARY : "#FFFFFF",
-                        color: msg.sent ? "#fff" : "#000",
-                        maxWidth: "70%",
-                        wordBreak: "break-word",
-                        boxShadow: "0 1px 2px rgba(0,0,0,0.1)",
-                      }}
-                    >
-                      <div>{msg.message}</div>
-                      <div className="text-end small text-secondary" style={{ opacity: 0.75, fontSize: "0.75em" }}>
-                        {msg.sentAt
-                          ? `Sent at ${formatWhatsAppTime(new Date(msg.sentAt))}`
-                          : msg.createdAt
-                          ? formatWhatsAppTime(new Date(msg.createdAt))
-                          : ""}
-                      </div>
-                    </div>
-                  </div>
-                  {/* System-generated scheduling info for scheduled messages */}
-                  {msg.scheduleTime && !msg.isSent && (
-                    <div className="d-flex mb-2 justify-content-end">
-                      <div
-                        className="small text-secondary"
-                        style={{
-                          background: "#f1f3f6",
-                          borderRadius: "8px",
-                          padding: "6px 12px",
-                          maxWidth: "70%",
-                          fontStyle: "italic",
-                        }}
-                      >
-                        {`The above message sent at ${msg.createdAt ? formatWhatsAppTime(new Date(msg.createdAt)) : ""} has been scheduled for `}
-                        <b>{msg.scheduleTime}</b>
-                        {msg.interval && ` and will be automated at the interval: ${msg.interval}`}
-                      </div>
-                    </div>
-                  )}
-                </React.Fragment>
-              ))
-            ) : (
-              <div className="text-center text-muted my-auto">
-                {activeChat ? "No messages yet. Say hello!" : "Select a chat to start messaging."}
-              </div>
-            )}
+            <ChatMessages
+              activeChat={activeChat}
+              activeMessages={activeMessages}
+              formatWhatsAppTime={formatWhatsAppTime}
+            />
           </div>
           {/* Message input */}
           {activeChat && (
@@ -700,17 +604,47 @@ function Dashboard({ user, onLogout }) {
                       />
                     )}
                     {scheduleType === "interval" && (
-                      <select
-                        className="form-select rounded-pill"
-                        style={{ maxWidth: "200px" }}
-                        value={interval}
-                        onChange={(e) => setInterval(e.target.value)}
-                      >
-                        <option value="every_minute">Every Minute</option>
-                        <option value="every_5_minutes">Every 5 Minutes</option>
-                        <option value="every_hour">Every Hour</option>
-                        <option value="every_day">Every Day</option>
-                      </select>
+                      <>
+                        <select
+                          className="form-select rounded-pill"
+                          style={{ maxWidth: "200px" }}
+                          value={interval}
+                          onChange={(e) => setInterval(e.target.value)}
+                        >
+                          <option value="every_minute">Every 1 Minute</option>
+                          <option value="every_3_minutes">Every 3 Minutes</option>
+                          <option value="every_5_minutes">Every 5 Minutes</option>
+                          <option value="every_10_minutes">Every 10 Minutes</option>
+                          <option value="every_15_minutes">Every 15 Minutes</option>
+                          <option value="every_30_minutes">Every 30 Minutes</option>
+                          <option value="every_hour">Every Hour</option>
+                          <option value="every_day">Every Day</option>
+                          <option value="custom">Custom</option>
+                        </select>
+                        {interval === "custom" && (
+                          <div className="d-flex align-items-center gap-2 mt-1">
+                            <input
+                              type="number"
+                              min="1"
+                              className="form-control rounded-pill"
+                              style={{ maxWidth: "100px" }}
+                              placeholder="Value"
+                              value={customIntervalValue}
+                              onChange={(e) => setCustomIntervalValue(e.target.value)}
+                            />
+                            <select
+                              className="form-select rounded-pill"
+                              style={{ maxWidth: "100px" }}
+                              value={customIntervalUnit}
+                              onChange={(e) => setCustomIntervalUnit(e.target.value)}
+                            >
+                              <option value="minutes">Minutes</option>
+                              <option value="hours">Hours</option>
+                              <option value="days">Days</option>
+                            </select>
+                          </div>
+                        )}
+                      </>
                     )}
                   </>
                 )}
@@ -736,6 +670,7 @@ function Dashboard({ user, onLogout }) {
                     justifyContent: "center",
                     marginLeft: "8px",
                   }}
+                  disabled={isSendDisabled()}
                 >
                   <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
@@ -748,114 +683,17 @@ function Dashboard({ user, onLogout }) {
       </div>
 
       {/* Group Creation Modal - OUTSIDE main layout, always at top level */}
-      {showGroupModal && (
-        <>
-          <div
-            className={`modal fade show ${window.innerWidth < 768 ? 'modal-mobile' : ''}`}
-            id="groupModal"
-            tabIndex="-1"
-            style={{
-              display: 'block',
-              zIndex: 3000,
-              position: 'fixed',
-              top: window.innerWidth < 768 ? 0 : 0,
-              left: window.innerWidth < 768 ? 0 : (window.innerWidth >= 768 ? 360 : 0),
-              width: window.innerWidth < 768 ? '100vw' : (window.innerWidth >= 768 ? 'calc(100vw - 360px)' : '100vw'),
-              height: '100vh',
-              overflowY: 'auto',
-              background: 'rgba(0,0,0,0.01)',
-            }}
-            aria-labelledby="groupModalLabel"
-            aria-modal="true"
-            role="dialog"
-          >
-            <div className="modal-dialog modal-dialog-centered" style={{
-              minHeight: '100vh',
-              margin: 0,
-              ...(window.innerWidth < 768
-                ? {
-                    width: '100vw',
-                    maxWidth: '100vw',
-                    height: '100vh',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }
-                : {
-                    width: '100%',
-                    maxWidth: 400,
-                    height: '100vh',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }),
-            }}>
-              <div className="modal-content" style={window.innerWidth < 768 ? {width: '95vw', maxWidth: 400} : {width: '95%', maxWidth: 400}}>
-                <div className="modal-header">
-                  <h5 className="modal-title" id="groupModalLabel">Create New Group</h5>
-                  <button
-                    type="button"
-                    className="btn-close"
-                    onClick={handleCloseGroupModal}
-                    aria-label="Close"
-                  ></button>
-                </div>
-                <form onSubmit={handleCreateGroup}>
-                  <div className="modal-body">
-                    <div className="mb-3">
-                      <input
-                        type="text"
-                        className="form-control"
-                        placeholder="Group Name"
-                        value={newGroupName}
-                        onChange={(e) => setNewGroupName(e.target.value)}
-                        required
-                        maxLength={50}
-                      />
-                    </div>
-                    <div className="mb-3">
-                      <input
-                        type="text"
-                        className="form-control"
-                        placeholder="Telegram Group ID"
-                        value={newGroupId}
-                        onChange={(e) => setNewGroupId(e.target.value)}
-                        required
-                      />
-                    </div>
-                  </div>
-                  <div className="modal-footer">
-                    <button
-                      type="button"
-                      className="btn btn-secondary"
-                      onClick={handleCloseGroupModal}
-                      disabled={creatingGroup}
-                    >
-                      Cancel
-                    </button>
-                    <button type="submit" className="btn btn-primary" disabled={creatingGroup}>
-                      {creatingGroup ? "Creating..." : "Create"}
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          </div>
-          <div
-            className="modal-backdrop fade show"
-            style={{
-              zIndex: 2999,
-              position: 'fixed',
-              top: 0,
-              left: window.innerWidth < 768 ? 0 : (window.innerWidth >= 768 ? 360 : 0),
-              width: window.innerWidth < 768 ? '100vw' : (window.innerWidth >= 768 ? 'calc(100vw - 360px)' : '100vw'),
-              height: '100vh',
-              background: 'rgba(0,0,0,0.5)',
-            }}
-            onClick={handleCloseGroupModal}
-          ></div>
-        </>
-      )}
+      <GroupModal
+        show={showGroupModal}
+        onClose={handleCloseGroupModal}
+        onSubmit={handleCreateGroup}
+        newGroupName={newGroupName}
+        setNewGroupName={setNewGroupName}
+        newGroupId={newGroupId}
+        setNewGroupId={setNewGroupId}
+        groupIdError={groupIdError}
+        creatingGroup={creatingGroup}
+      />
     </>
   );
 }
