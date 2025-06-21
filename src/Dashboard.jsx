@@ -592,10 +592,15 @@ function Dashboard({ user, onLogout }) {
               style={{
                 background: PRIMARY,
                 color: "#fff",
-                width: "40px",
-                height: "40px",
+                width: "48px", // slightly larger for visibility
+                height: "48px",
                 flexShrink: "0",
+                fontSize: "22px",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.10)",
+                transition: "background 0.2s",
               }}
+              title="Send"
+              disabled={!message.trim()} // Only disable if input is empty
             >
               <svg
                 width="22"
