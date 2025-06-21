@@ -409,6 +409,9 @@ function Dashboard({ user, onLogout }) {
               align-items: center;
               justify-content: center;
             }
+            .new-chat-btn {
+              z-index: 1060; /* Ensure button is above chatlist */
+            }
           }
         `}
       </style>
