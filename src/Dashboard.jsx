@@ -105,6 +105,7 @@ function Dashboard({ user, onLogout }) {
           [activeChatId]: data.messages || [],
         }));
       } catch (err) {
+        console.error("Failed to fetch messages:", err);
         setMessagesByGroup((prev) => ({
           ...prev,
           [activeChatId]: [],
@@ -113,6 +114,33 @@ function Dashboard({ user, onLogout }) {
     };
     fetchMessages();
   }, [activeChatId]);
+
+  useEffect(() => {
+    fetchGroups();
+  }, []);
+
+  const fetchGroups = async () => {
+    const token = localStorage.getItem("token");
+    try {
+      const res = await fetch(`${API_BASE_URL}/groups`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Failed to fetch groups");
+      const data = await res.json();
+      setChats(
+        (data.groups || []).map((g) => ({
+          id: g.groupId,
+          name: g.displayName,
+          lastMessage: "",
+          time: "",
+          messages: [],
+        }))
+      );
+    } catch (err) {
+      console.error("Failed to fetch groups:", err);
+      setChats(sampleChats); // Fallback to sample chats
+    }
+  };
 
   // Helper to get cron string
   const getCronString = () => {
@@ -173,6 +201,7 @@ function Dashboard({ user, onLogout }) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
     } catch (err) {
+      console.error("Failed to send message:", err);
       alert("Failed to send message. Please try again.");
     }
   };
@@ -225,16 +254,8 @@ function Dashboard({ user, onLogout }) {
       });
       const data = await res.json();
       if (res.ok) {
-        // Use 'id' as the key, not 'groupId'
-        const newGroup = {
-          id: data.groupId, // Make sure this matches what your backend returns
-          name: data.displayName,
-          lastMessage: "",
-          time: "",
-          messages: [],
-        };
-        setChats((prev) => [newGroup, ...prev]);
-        setActiveChatId(newGroup.id); // Use newGroup.id
+        await fetchGroups(); // Refresh the chat list from backend
+        setActiveChatId(data.groupId); // Open the new group
         handleCloseGroupModal();
         if (window.innerWidth < 768) setMobileView("chat");
       } else {
@@ -420,7 +441,7 @@ function Dashboard({ user, onLogout }) {
             bottom: 24,
             right: 24,
             zIndex: 3,
-            display: "flex"
+            display: "flex",
           }}
         >
           <svg width="28" height="28" fill="currentColor" viewBox="0 0 20 20">
@@ -576,7 +597,7 @@ function Dashboard({ user, onLogout }) {
               style={{
                 background: PRIMARY,
                 color: "#fff",
-                width: "48px", // slightly larger for visibility
+                width: "48px",
                 height: "48px",
                 flexShrink: "0",
                 fontSize: "22px",
@@ -584,7 +605,7 @@ function Dashboard({ user, onLogout }) {
                 transition: "background 0.2s",
               }}
               title="Send"
-              disabled={!message.trim()} // Only disable if input is empty
+              disabled={!message.trim()}
             >
               <svg
                 width="22"
