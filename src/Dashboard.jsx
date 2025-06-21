@@ -342,7 +342,22 @@ function Dashboard({ user, onLogout }) {
   }, [showGroupModal]);
 
   const isSendDisabled = () => {
-    return !message.trim();
+    if (!message.trim()) return true;
+    if (scheduleType === "now") return false;
+    if (scheduleType === "datetime") return !scheduleDateTime;
+    if (scheduleType === "interval") {
+      if (!interval) return true;
+      if (interval === "custom") {
+        return (
+          !customIntervalValue ||
+          isNaN(customIntervalValue) ||
+          Number(customIntervalValue) <= 0 ||
+          !customIntervalUnit
+        );
+      }
+      return false;
+    }
+    return true;
   };
 
   return (
