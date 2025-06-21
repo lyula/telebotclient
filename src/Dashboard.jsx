@@ -25,11 +25,19 @@ const formatWhatsAppDate = (date) => {
   const isToday = date.toDateString() === today.toDateString();
   const isYesterday = date.toDateString() === yesterday.toDateString();
 
-  if (isToday) return "Today";
+  if (isToday) {
+    // Show time in hh:mm AM/PM
+    const hours = date.getHours();
+    const minutes = date.getMinutes();
+    const ampm = hours >= 12 ? "PM" : "AM";
+    const formattedHours = hours % 12 || 12;
+    return `${formattedHours}:${minutes.toString().padStart(2, "0")} ${ampm}`;
+  }
   if (isYesterday) return "Yesterday";
+  // Show date in dd/mm/yy
   return `${date.getDate().toString().padStart(2, "0")}/${(date.getMonth() + 1)
     .toString()
-    .padStart(2, "0")}/${date.getFullYear()}`;
+    .padStart(2, "0")}/${date.getFullYear().toString().slice(-2)}`;
 };
 
 // Helper to format time like WhatsApp
