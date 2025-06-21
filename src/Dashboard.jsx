@@ -89,6 +89,9 @@ function Dashboard({ user, onLogout }) {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [scheduledMessages, setScheduledMessages] = useState([]);
   const [notification, setNotification] = useState({ show: false, message: "" });
+  const [scheduleInput, setScheduleInput] = useState("");
+  const [showSchedulePopover, setShowSchedulePopover] = useState(false);
+  const [isMessageInputFocused, setIsMessageInputFocused] = useState(false);
 
   useEffect(() => {
     const greetingInterval = setInterval(() => setGreeting(getGreeting()), 60 * 1000);
@@ -674,82 +677,84 @@ function Dashboard({ user, onLogout }) {
               }}
               onSubmit={handleSend}
             >
-              <div className={`schedule-controls ${!isSchedulerOpen ? 'collapsed' : ''}`}>
-                <button
-                  type="button"
-                  className="btn btn-link scheduler-toggle-btn"
-                  onClick={toggleScheduler}
-                  style={{ color: PRIMARY }}
-                >
-                  {isSchedulerOpen ? '▼' : '▲'}
-                </button>
-                {isSchedulerOpen && (
-                  <>
-                    <select
-                      className="form-select rounded-pill"
-                      style={{ maxWidth: "200px" }}
-                      value={scheduleType}
-                      onChange={(e) => setScheduleType(e.target.value)}
-                    >
-                      <option value="now">Send Now</option>
-                      <option value="datetime">Specific Time</option>
-                      <option value="interval">Recurring</option>
-                    </select>
-                    {scheduleType === "datetime" && (
-                      <input
-                        type="datetime-local"
-                        className="form-control rounded-pill"
+              {isMessageInputFocused && (
+                <div className={`schedule-controls ${!isSchedulerOpen ? 'collapsed' : ''}`}>
+                  <button
+                    type="button"
+                    className="btn btn-link scheduler-toggle-btn"
+                    onClick={toggleScheduler}
+                    style={{ color: PRIMARY }}
+                  >
+                    {isSchedulerOpen ? '▼' : '▲'}
+                  </button>
+                  {isSchedulerOpen && (
+                    <>
+                      <select
+                        className="form-select rounded-pill"
                         style={{ maxWidth: "200px" }}
-                        value={scheduleDateTime}
-                        onChange={(e) => setScheduleDateTime(e.target.value)}
-                      />
-                    )}
-                    {scheduleType === "interval" && (
-                      <>
-                        <select
-                          className="form-select rounded-pill"
+                        value={scheduleType}
+                        onChange={(e) => setScheduleType(e.target.value)}
+                      >
+                        <option value="now">Send Now</option>
+                        <option value="datetime">Specific Time</option>
+                        <option value="interval">Recurring</option>
+                      </select>
+                      {scheduleType === "datetime" && (
+                        <input
+                          type="datetime-local"
+                          className="form-control rounded-pill"
                           style={{ maxWidth: "200px" }}
-                          value={interval}
-                          onChange={(e) => setInterval(e.target.value)}
-                        >
-                          <option value="every_minute">Every 1 Minute</option>
-                          <option value="every_3_minutes">Every 3 Minutes</option>
-                          <option value="every_5_minutes">Every 5 Minutes</option>
-                          <option value="every_10_minutes">Every 10 Minutes</option>
-                          <option value="every_15_minutes">Every 15 Minutes</option>
-                          <option value="every_30_minutes">Every 30 Minutes</option>
-                          <option value="every_hour">Every Hour</option>
-                          <option value="every_day">Every Day</option>
-                          <option value="custom">Custom</option>
-                        </select>
-                        {interval === "custom" && (
-                          <div className="d-flex align-items-center gap-2 mt-1">
-                            <input
-                              type="number"
-                              min="1"
-                              className="form-control rounded-pill"
-                              style={{ maxWidth: "100px" }}
-                              placeholder="Value"
-                              value={customIntervalValue}
-                              onChange={(e) => setCustomIntervalValue(e.target.value)}
-                            />
-                            <select
-                              className="form-select rounded-pill"
-                              style={{ maxWidth: "100px" }}
-                              value={customIntervalUnit}
-                              onChange={(e) => setCustomIntervalUnit(e.target.value)}
-                            >
-                              <option value="minutes">Minutes</option>
-                              <option value="hours">Hours</option>
-                              <option value="days">Days</option>
-                            </select>
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </>
-                )}
-              </div>
+                          value={scheduleDateTime}
+                          onChange={(e) => setScheduleDateTime(e.target.value)}
+                        />
+                      )}
+                      {scheduleType === "interval" && (
+                        <>
+                          <select
+                            className="form-select rounded-pill"
+                            style={{ maxWidth: "200px" }}
+                            value={interval}
+                            onChange={(e) => setInterval(e.target.value)}
+                          >
+                            <option value="every_minute">Every 1 Minute</option>
+                            <option value="every_3_minutes">Every 3 Minutes</option>
+                            <option value="every_5_minutes">Every 5 Minutes</option>
+                            <option value="every_10_minutes">Every 10 Minutes</option>
+                            <option value="every_15_minutes">Every 15 Minutes</option>
+                            <option value="every_30_minutes">Every 30 Minutes</option>
+                            <option value="every_hour">Every Hour</option>
+                            <option value="every_day">Every Day</option>
+                            <option value="custom">Custom</option>
+                          </select>
+                          {interval === "custom" && (
+                            <div className="d-flex align-items-center gap-2 mt-1">
+                              <input
+                                type="number"
+                                min="1"
+                                className="form-control rounded-pill"
+                                style={{ maxWidth: "100px" }}
+                                placeholder="Value"
+                                value={customIntervalValue}
+                                onChange={(e) => setCustomIntervalValue(e.target.value)}
+                              />
+                              <select
+                                className="form-select rounded-pill"
+                                style={{ maxWidth: "100px" }}
+                                value={customIntervalUnit}
+                                onChange={(e) => setCustomIntervalUnit(e.target.value)}
+                              >
+                                <option value="minutes">Minutes</option>
+                                <option value="hours">Hours</option>
+                                <option value="days">Days</option>
+                              </select>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
               <div className="input-container">
                 <input
                   type="text"
@@ -758,6 +763,8 @@ function Dashboard({ user, onLogout }) {
                   placeholder="Type a message..."
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
+                  onFocus={() => setIsMessageInputFocused(true)}
+                  onBlur={() => setIsMessageInputFocused(false)}
                 />
                 <button
                   type="submit"
