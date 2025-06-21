@@ -325,7 +325,7 @@ function Dashboard({ user, onLogout }) {
           }
           .new-chat-btn {
             position: fixed;
-            bottom: 80px;
+            bottom: 16px;
             right: 16px;
             width: 56px;
             height: 56px;
@@ -342,7 +342,7 @@ function Dashboard({ user, onLogout }) {
             cursor: pointer;
           }
           .message-input {
-            flex部分: flex: 1;
+            flex: 1;
             min-width: 0;
           }
           .input-container {
@@ -394,6 +394,22 @@ function Dashboard({ user, onLogout }) {
             align-items: center;
             justify-content: center;
           }
+          .modal-mobile {
+            z-index: 1060;
+          }
+          @media (max-width: 767px) {
+            .modal-mobile .modal-dialog {
+              margin: 0;
+              position: fixed;
+              top: 0;
+              left: 0;
+              width: 100%;
+              height: 100%;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            }
+          }
         `}
       </style>
       {/* Sidebar (Chat List) */}
@@ -428,7 +444,7 @@ function Dashboard({ user, onLogout }) {
           {greeting}
         </div>
         {/* Chat List */}
-        <div className="flex-grow-1 overflow-auto bg-white" style={{ paddingBottom: "120px" }}>
+        <div className="flex-grow-1 overflow-auto bg-white" style={{ paddingBottom: "80px" }}>
           {chats.length === 0 ? (
             <div className="text-center text-muted mt-5">No chats yet. Start a new chat!</div>
           ) : (
@@ -682,7 +698,7 @@ function Dashboard({ user, onLogout }) {
         )}
         {/* Group Creation Modal */}
         <div
-          className={`modal fade ${showGroupModal ? 'show' : ''}`}
+          className={`modal fade ${showGroupModal ? 'show' : ''} ${window.innerWidth < 768 ? 'modal-mobile' : ''}`}
           id="groupModal"
           tabIndex="-1"
           style={{ display: showGroupModal ? 'block' : 'none' }}
