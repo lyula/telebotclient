@@ -293,7 +293,7 @@ function Dashboard({ user, onLogout }) {
           }
           .new-chat-btn {
             position: absolute;
-            bottom: 16px;
+            bottom: 32px;
             right: 16px;
             width: 56px;
             height: 56px;
@@ -319,10 +319,28 @@ function Dashboard({ user, onLogout }) {
             flex-wrap: nowrap;
           }
           .schedule-controls {
+            position: absolute;
+            bottom: 70px;
+            left: 16px;
+            right: 16px;
+            background: #fff;
+            padding: 8px;
+            border-radius: 8px;
+            box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
             display: flex;
             flex-direction: column;
             gap: 8px;
-            padding-top: 8px;
+            animation: ${message.length > 0 ? "popUp 0.3s ease-in-out" : "popDown 0.3s ease-in-out"};
+            visibility: ${message.length > 0 ? "visible" : "hidden"};
+            opacity: ${message.length > 0 ? "1" : "0"};
+          }
+          @keyframes popUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+          }
+          @keyframes popDown {
+            from { transform: translateY(0); opacity: 1; }
+            to { transform: translateY(20px); opacity: 0; }
           }
         `}
       </style>
@@ -358,7 +376,7 @@ function Dashboard({ user, onLogout }) {
           {greeting}
         </div>
         {/* Chat List */}
-        <div className="flex-grow-1 overflow-auto bg-white" style={{ paddingBottom: "80px" }}>
+        <div className="flex-grow-1 overflow-auto bg-white" style={{ paddingBottom: "100px" }}>
           {chats.length === 0 ? (
             <div className="text-center text-muted mt-5">No chats yet. Start a new chat!</div>
           ) : (
@@ -419,39 +437,41 @@ function Dashboard({ user, onLogout }) {
       >
         {/* Chat header */}
         <div
-          className="d-flex align-items-center px-3 py-3 border-bottom bg-white"
+          className="d-flex align-items-center justify-content-between px-3 py-3 border-bottom bg-white"
           style={{ minHeight: "60px" }}
         >
-          {window.innerWidth < 768 && (
-            <button
-              className="btn btn-link me-2 d-md-none"
-              style={{ color: PRIMARY, fontSize: "22px" }}
-              onClick={handleBack}
-            >
-              ←
-            </button>
-          )}
           {activeChat ? (
             <>
-              <div
-                className="rounded-circle d-flex align-items-center justify-content-center me-3"
-                style={{
-                  width: "40px",
-                  height: "40px",
-                  background: PRIMARY,
-                  color: "#fff",
-                  fontWeight: "bold",
-                  fontSize: "18px",
-                }}
-              >
-                {activeChat?.name ? activeChat.name[0] : ""}
-              </div>
-              <div>
-                <div className="fw-semibold">{activeChat.name}</div>
-                <div className="small text-secondary">
-                  {activeChat.time ? formatWhatsAppDate(new Date(activeChat.time)) : ""}
+              <div className="d-flex align-items-center">
+                <div
+                  className="rounded-circle d-flex align-items-center justify-content-center me-3"
+                  style={{
+                    width: "40px",
+                    height: "40px",
+                    background: PRIMARY,
+                    color: "#fff",
+                    fontWeight: "bold",
+                    fontSize: "18px",
+                  }}
+                >
+                  {activeChat?.name ? activeChat.name[0] : ""}
+                </div>
+                <div>
+                  <div className="fw-semibold">{activeChat.name}</div>
+                  <div className="small text-secondary">
+                    {activeChat.time ? formatWhatsAppDate(new Date(activeChat.time)) : ""}
+                  </div>
                 </div>
               </div>
+              {window.innerWidth < 768 && (
+                <button
+                  className="btn btn-link d-md-none"
+                  style={{ color: PRIMARY, fontSize: "22px" }}
+                  onClick={handleBack}
+                >
+                  ←
+                </button>
+              )}
             </>
           ) : (
             <span className="text-muted">Select a chat to start messaging</span>
@@ -523,7 +543,7 @@ function Dashboard({ user, onLogout }) {
         {/* Message input */}
         {activeChat && (
           <form
-            className="p-3 border-top px-3 bg-white d-flex flex-column gap-2"
+            className="p-3 border-top px-3 bg-white position-relative"
             style={{
               position: "sticky",
               bottom: "0",
@@ -534,33 +554,6 @@ function Dashboard({ user, onLogout }) {
             }}
             onSubmit={handleSend}
           >
-            <div className="input-container">
-              <input
-                type="text"
-                className="form-control rounded-pill border-0 message-input"
-                style={{ background: "#f5f7fa" }}
-                placeholder="Type a message..."
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-              />
-              <button
-                type="submit"
-                className="btn btn-primary rounded-circle"
-                style={{
-                  width: "40px",
-                  height: "40px",
-                  padding: "0",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  marginLeft: "8px",
-                }}
-              >
-                <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
-                </svg>
-              </button>
-            </div>
             <div className="schedule-controls">
               <select
                 className="form-select rounded-pill"
@@ -594,6 +587,33 @@ function Dashboard({ user, onLogout }) {
                   <option value="every_day">Every Day</option>
                 </select>
               )}
+            </div>
+            <div className="input-container">
+              <input
+                type="text"
+                className="form-control rounded-pill border-0 message-input"
+                style={{ background: "#f5f7fa" }}
+                placeholder="Type a message..."
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+              />
+              <button
+                type="submit"
+                className="btn btn-primary rounded-circle"
+                style={{
+                  width: "40px",
+                  height: "40px",
+                  padding: "0",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginLeft: "8px",
+                }}
+              >
+                <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
+                </svg>
+              </button>
             </div>
           </form>
         )}
