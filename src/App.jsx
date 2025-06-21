@@ -6,7 +6,7 @@ import Dashboard from "./Dashboard";
 const API_BASE_URL = 'https://telebot-0ev9.onrender.com/api';
 
 function App() {
-  const [showLogin, setShowLogin] = useState(false);
+  const [showLogin, setShowLogin] = useState(true);
   const [loggedIn, setLoggedIn] = useState(false);
   const [user, setUser] = useState(null);
 

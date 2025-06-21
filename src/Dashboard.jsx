@@ -13,15 +13,40 @@ function getGreeting() {
   return "Good evening";
 }
 
+// Helper to format dates like WhatsApp
+const formatWhatsAppDate = (date) => {
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+
+  const isToday = date.toDateString() === today.toDateString();
+  const isYesterday = date.toDateString() === yesterday.toDateString();
+
+  if (isToday) return "Today";
+  if (isYesterday) return "Yesterday";
+  return `${date.getDate().toString().padStart(2, "0")}/${(date.getMonth() + 1)
+    .toString()
+    .padStart(2, "0")}/${date.getFullYear()}`;
+};
+
+// Helper to format time like WhatsApp
+const formatWhatsAppTime = (date) => {
+  const hours = date.getHours();
+  const minutes = date.getMinutes();
+  const ampm = hours >= 12 ? "PM" : "AM";
+  const formattedHours = hours % 12 || 12;
+  return `${formattedHours}:${minutes.toString().padStart(2, "0")} ${ampm}`;
+};
+
 const sampleChats = [
   {
     id: 1,
     name: "Telebot Support",
     lastMessage: "Welcome to Telebot! How can we help?",
-    time: "09:00",
+    time: new Date().toISOString(),
     messages: [
-      { text: "Welcome to Telebot! How can we help?", time: "09:00", sent: false },
-      { text: "Hi, just testing!", time: "09:01", sent: true },
+      { text: "Welcome to Telebot! How can we help?", createdAt: new Date().toISOString(), sent: false },
+      { text: "Hi, just testing!", createdAt: new Date().toISOString(), sent: true },
     ],
   },
 ];
@@ -39,6 +64,7 @@ function Dashboard({ user, onLogout }) {
   const [newGroupName, setNewGroupName] = useState("");
   const [newGroupId, setNewGroupId] = useState("");
   const [creatingGroup, setCreatingGroup] = useState(false);
+  const [messagesByGroup, setMessagesByGroup] = useState({}); // { [groupId]: [messages] }
 
   useEffect(() => {
     const greetingInterval = setInterval(() => setGreeting(getGreeting()), 60 * 1000);
@@ -64,7 +90,29 @@ function Dashboard({ user, onLogout }) {
     return () => window.removeEventListener("resize", handleResize);
   }, [mobileView, activeChatId]);
 
-  const activeChat = chats.find((c) => c.id === activeChatId);
+  useEffect(() => {
+    const fetchMessages = async () => {
+      if (!activeChatId) return;
+      const token = localStorage.getItem("token");
+      try {
+        const res = await fetch(`${API_BASE_URL}/messages/group/${activeChatId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) throw new Error("Failed to fetch messages");
+        const data = await res.json();
+        setMessagesByGroup((prev) => ({
+          ...prev,
+          [activeChatId]: data.messages || [],
+        }));
+      } catch (err) {
+        setMessagesByGroup((prev) => ({
+          ...prev,
+          [activeChatId]: [],
+        }));
+      }
+    };
+    fetchMessages();
+  }, [activeChatId]);
 
   // Helper to get cron string
   const getCronString = () => {
@@ -73,7 +121,6 @@ function Dashboard({ user, onLogout }) {
       const dt = new Date(scheduleDateTime);
       return `${dt.getMinutes()} ${dt.getHours()} ${dt.getDate()} ${dt.getMonth() + 1} *`;
     }
-    // Interval options
     switch (interval) {
       case "every_minute":
         return "* * * * *";
@@ -90,28 +137,24 @@ function Dashboard({ user, onLogout }) {
 
   const handleSend = async (e) => {
     e.preventDefault();
-    if (!message.trim() || !activeChat || message.trim().length === 0) return;
-
+    if (!message.trim() || !activeChatId) return;
     const newMsg = {
       text: message.trim(),
-      time: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
       sent: true,
     };
-
+    setMessagesByGroup((prev) => ({
+      ...prev,
+      [activeChatId]: [...(prev[activeChatId] || []), newMsg],
+    }));
     setChats((prev) =>
       prev.map((chat) =>
         chat.id === activeChatId
-          ? {
-              ...chat,
-              messages: [...chat.messages, newMsg],
-              lastMessage: message.trim(),
-              time: newMsg.time,
-            }
+          ? { ...chat, lastMessage: message.trim(), time: newMsg.createdAt }
           : chat
       )
     );
     setMessage("");
-
     try {
       const token = localStorage.getItem("token");
       const response = await fetch(`${API_BASE_URL}/messages/schedule`, {
@@ -130,7 +173,6 @@ function Dashboard({ user, onLogout }) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
     } catch (err) {
-      console.error("Failed to send message:", err);
       alert("Failed to send message. Please try again.");
     }
   };
@@ -206,6 +248,9 @@ function Dashboard({ user, onLogout }) {
       setCreatingGroup(false);
     }
   };
+
+  const activeChat = chats.find((chat) => chat.id === activeChatId);
+  const activeMessages = messagesByGroup[activeChatId] || [];
 
   return (
     <div
@@ -337,16 +382,22 @@ function Dashboard({ user, onLogout }) {
                   chat.id === activeChatId ? "bg-light" : ""
                 }`}
                 style={{ cursor: "pointer" }}
-                onClick={() => setActiveChatId(chat.id)}
+                onClick={() => {
+                  setActiveChatId(chat.id);
+                  if (window.innerWidth < 768) setMobileView("chat");
+                }}
               >
                 <div className="flex-grow-1">
                   <div className="fw-semibold">{chat.name}</div>
-                  <div className="text-secondary small" style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                  <div
+                    className="text-secondary small"
+                    style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
+                  >
                     {chat.lastMessage}
                   </div>
                 </div>
                 <div className="text-end small text-secondary ms-2" style={{ minWidth: 60 }}>
-                  {chat.time}
+                  {chat.time ? formatWhatsAppDate(new Date(chat.time)) : ""}
                 </div>
               </div>
             ))
@@ -436,15 +487,7 @@ function Dashboard({ user, onLogout }) {
               <div>
                 <div className="fw-semibold">{activeChat.name}</div>
                 <div className="small text-secondary">
-                  {activeChat.time
-                    ? new Date(activeChat.time).toLocaleString(undefined, {
-                        year: "numeric",
-                        month: "short",
-                        day: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })
-                    : ""}
+                  {activeChat.time ? formatWhatsAppDate(new Date(activeChat.time)) : ""}
                 </div>
               </div>
             </>
@@ -460,14 +503,14 @@ function Dashboard({ user, onLogout }) {
             paddingBottom: window.innerWidth < 768 ? "90px" : "80px",
           }}
         >
-          {activeChat && activeChat.messages.length > 0 ? (
-            activeChat.messages.map((msg, idx) => (
+          {activeChat && activeMessages.length > 0 ? (
+            activeMessages.map((msg, idx) => (
               <div
                 key={idx}
                 className={`d-flex mb-2 ${msg.sent ? "justify-content-end" : "justify-content-start"}`}
               >
                 <div
-                  className={`d-flex mb-3 py-2 rounded-3 position-relative ${
+                  className={`d-flex flex-column py-2 px-3 rounded-3 position-relative ${
                     msg.sent ? "chat-bubble-sent" : "chat-bubble-received"
                   }`}
                   style={{
@@ -479,16 +522,8 @@ function Dashboard({ user, onLogout }) {
                   }}
                 >
                   <div>{msg.text}</div>
-                  <div className="text-end small text-secondary" style={{ opacity: 0.75 }}>
-                    {msg.time
-                      ? new Date(msg.time).toLocaleString(undefined, {
-                          year: "numeric",
-                          month: "short",
-                          day: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })
-                      : ""}
+                  <div className="text-end small text-secondary" style={{ opacity: 0.75, fontSize: "0.75em" }}>
+                    {msg.createdAt ? formatWhatsAppTime(new Date(msg.createdAt)) : ""}
                   </div>
                 </div>
               </div>
