@@ -47,6 +47,9 @@ function ChatMessages({ activeMessages, formatWhatsAppTime, onTogglePaused, acti
                       onChange={() => onTogglePaused(msg._id)}
                       style={{ width: 28, height: 16, cursor: "pointer" }}
                     />
+                    <span style={{ marginLeft: 8 }}>
+                      {msg.paused ? "Paused" : "Active"}
+                    </span>
                   </label>
                 )}
               </div>

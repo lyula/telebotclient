@@ -403,8 +403,7 @@ function Dashboard({ user, onLogout }) {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
-        // Optionally, refresh scheduled messages or update state
-        fetchScheduledMessages();
+        fetchScheduledMessages(); // Refresh messages
       } else {
         alert("Failed to toggle automation");
       }
