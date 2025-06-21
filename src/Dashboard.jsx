@@ -94,6 +94,30 @@ function Dashboard({ user, onLogout }) {
     fetchGroups();
   }, []);
 
+  useEffect(() => {
+    if (!activeChatId) return;
+    const token = localStorage.getItem("token");
+
+    const fetchMessages = async () => {
+      try {
+        const resMsg = await fetch(`${API_BASE_URL}/messages/group/${activeChatId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (resMsg.ok) {
+          const msgData = await resMsg.json();
+          setMessagesByGroup((prev) => ({
+            ...prev,
+            [activeChatId]: msgData.messages || [],
+          }));
+        }
+      } catch (err) {}
+    };
+
+    fetchMessages();
+    const interval = setInterval(fetchMessages, 30000); // every 30 seconds
+    return () => clearInterval(interval);
+  }, [activeChatId]);
+
   const fetchGroups = async () => {
     const token = localStorage.getItem("token");
     try {
