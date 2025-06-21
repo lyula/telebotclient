@@ -270,8 +270,8 @@ function Dashboard({ user, onLogout }) {
         body: JSON.stringify({
           groupId: activeChatId,
           message: message.trim(),
-          scheduleTime: getCronString(),
-          userSchedule: getUserScheduleString(), // <-- Add this line
+          schedule: getCronString(), // <-- Change this line
+          userSchedule: getUserScheduleString(),
         }),
       });
       if (!response.ok) {
