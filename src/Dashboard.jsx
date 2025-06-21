@@ -85,6 +85,8 @@ function Dashboard({ user, onLogout }) {
   const [groupIdError, setGroupIdError] = useState("");
   const [customIntervalValue, setCustomIntervalValue] = useState("");
   const [customIntervalUnit, setCustomIntervalUnit] = useState("minutes");
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const [scheduledMessages, setScheduledMessages] = useState([]);
 
   useEffect(() => {
     const greetingInterval = setInterval(() => setGreeting(getGreeting()), 60 * 1000);
@@ -211,7 +213,7 @@ function Dashboard({ user, onLogout }) {
           return "0 0 * * *";
         case "custom":
           if (!customIntervalValue || isNaN(customIntervalValue) || customIntervalValue <= 0)
-            return "* * * * *";
+            return "* * * * *"; // <-- This is the fallback!
           if (customIntervalUnit === "minutes")
             return `*/${customIntervalValue} * * * *`;
           if (customIntervalUnit === "hours")
@@ -224,6 +226,30 @@ function Dashboard({ user, onLogout }) {
       }
     }
     return "* * * * *";
+  };
+
+  const getUserScheduleString = () => {
+    if (scheduleType === "now") return "";
+    if (scheduleType === "datetime" && scheduleDateTime) {
+      return `at ${new Date(scheduleDateTime).toLocaleString()}`;
+    }
+    if (scheduleType === "interval") {
+      if (interval === "custom") {
+        return `every ${customIntervalValue} ${customIntervalUnit}`;
+      }
+      const intervalLabels = {
+        every_minute: "every 1 minute",
+        every_3_minutes: "every 3 minutes",
+        every_5_minutes: "every 5 minutes",
+        every_10_minutes: "every 10 minutes",
+        every_15_minutes: "every 15 minutes",
+        every_30_minutes: "every 30 minutes",
+        every_hour: "every hour",
+        every_day: "every day",
+      };
+      return intervalLabels[interval] || "";
+    }
+    return "";
   };
 
   const handleSend = async (e) => {
@@ -243,6 +269,7 @@ function Dashboard({ user, onLogout }) {
           groupId: activeChatId,
           message: message.trim(),
           scheduleTime: getCronString(),
+          userSchedule: getUserScheduleString(), // <-- Add this line
         }),
       });
       if (!response.ok) {
@@ -254,9 +281,38 @@ function Dashboard({ user, onLogout }) {
       });
       if (resMsg.ok) {
         const msgData = await resMsg.json();
+        // Add schedule summary to the last message if scheduled
+        let updatedMessages = msgData.messages || [];
+        if (scheduleType !== "now" && updatedMessages.length > 0) {
+          const lastMsg = updatedMessages[updatedMessages.length - 1];
+          let summary = "";
+          if (scheduleType === "datetime") {
+            summary = `Will run at ${new Date(scheduleDateTime).toLocaleString()}`;
+          } else if (scheduleType === "interval") {
+            if (interval === "custom") {
+              summary = `Will repeat every ${customIntervalValue} ${customIntervalUnit}`;
+            } else {
+              const intervalLabels = {
+                every_minute: "every 1 minute",
+                every_3_minutes: "every 3 minutes",
+                every_5_minutes: "every 5 minutes",
+                every_10_minutes: "every 10 minutes",
+                every_15_minutes: "every 15 minutes",
+                every_30_minutes: "every 30 minutes",
+                every_hour: "every hour",
+                every_day: "every day",
+              };
+              summary = `Will repeat ${intervalLabels[interval] || ""}`;
+            }
+          }
+          lastMsg.isScheduled = true;
+          lastMsg.paused = false; // default to not paused
+          lastMsg.scheduleSummary = summary;
+          updatedMessages[updatedMessages.length - 1] = lastMsg;
+        }
         setMessagesByGroup((prev) => ({
           ...prev,
-          [activeChatId]: msgData.messages || [],
+          [activeChatId]: updatedMessages,
         }));
       }
     } catch (err) {
@@ -332,6 +388,24 @@ function Dashboard({ user, onLogout }) {
 
   const toggleScheduler = () => {
     setIsSchedulerOpen((prev) => !prev);
+  };
+
+  const handleTogglePaused = async (msgId) => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API_BASE_URL}/messages/schedule/${msgId}/toggle`, {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        // Optionally, refresh scheduled messages or update state
+        fetchScheduledMessages();
+      } else {
+        alert("Failed to toggle automation");
+      }
+    } catch (err) {
+      alert("Failed to toggle automation");
+    }
   };
 
   const activeChat = chats.find((chat) => chat.id === activeChatId);
@@ -579,6 +653,7 @@ function Dashboard({ user, onLogout }) {
               activeChat={activeChat}
               activeMessages={activeMessages}
               formatWhatsAppTime={formatWhatsAppTime}
+              onTogglePaused={handleTogglePaused} // <-- Add this line
             />
           </div>
           {/* Message input */}
@@ -674,7 +749,7 @@ function Dashboard({ user, onLogout }) {
               <div className="input-container">
                 <input
                   type="text"
-                  className="form-control rounded-pill border-0 message-input"
+                  className="form-control rounded-pill message-input"
                   style={{ background: "#f5f7fa" }}
                   placeholder="Type a message..."
                   value={message}

@@ -1,73 +1,81 @@
 import React from "react";
 
-function ChatMessages({ activeChat, activeMessages, formatWhatsAppTime }) {
-  if (!activeChat) {
-    return (
-      <div className="text-center text-muted my-auto">
-        Select a chat to start messaging.
-      </div>
-    );
-  }
-
+function ChatMessages({ activeMessages, formatWhatsAppTime, onTogglePaused, activeChat }) {
   if (activeMessages.length === 0) {
     return (
       <div className="text-center text-muted my-auto">
-        No messages yet.Say hello!
+        No messages yet. Say hello!
       </div>
     );
   }
 
   return (
-    <>
-      {activeMessages.map((msg, idx) => (
-        <React.Fragment key={idx}>
+    <div>
+      {activeMessages.map((msg, idx) => {
+        // You may need to adjust this logic for sent/received
+        const isSent = msg.sent || msg.isSent || msg.user === (activeChat?.user || "me");
+        return (
           <div
-            className={`d-flex mb-2 ${msg.sent ? "justify-content-end" : "justify-content-start"}`}
+            key={msg._id || idx}
+            className={`d-flex mb-2 ${isSent ? "justify-content-end" : "justify-content-start"}`}
           >
             <div
-              className={`d-flex flex-column py-2 px-3 rounded-3 position-relative ${
-                msg.sent ? "chat-bubble-sent" : "chat-bubble-received"
+              className={`position-relative p-2 rounded-3 shadow-sm ${
+                isSent ? "chat-bubble-sent ms-auto" : "chat-bubble-received me-auto"
               }`}
               style={{
-                background: msg.sent ? "#0d6efd" : "#FFFFFF",
-                color: msg.sent ? "#fff" : "#000",
-                maxWidth: "70%",
+                maxWidth: "80%",
+                background: isSent ? "#d1e7ff" : "#fff",
+                border: isSent ? "1px solid #b6d4fe" : "1px solid #eee",
+                minWidth: "80px",
                 wordBreak: "break-word",
-                boxShadow: "0 1px 2px rgba(0,0,0,0.1)",
               }}
             >
-              <div>{msg.message}</div>
-              <div className="text-end small text-secondary" style={{ opacity: 0.75, fontSize: "0.75em" }}>
-                {msg.sentAt
-                  ? `Sent at ${formatWhatsAppTime(new Date(msg.sentAt))}`
+              <div className="d-flex align-items-center">
+                <span className="flex-grow-1">{msg.text || msg.message}</span>
+                {/* Tiny toggle switch for scheduled messages */}
+                {msg.isScheduled && (
+                  <label
+                    className="form-check form-switch ms-2 mb-0"
+                    title={msg.paused ? "Resume automation" : "Pause automation"}
+                    style={{ fontSize: 12 }}
+                  >
+                    <input
+                      className="form-check-input"
+                      type="checkbox"
+                      checked={!msg.paused}
+                      onChange={() => onTogglePaused(msg._id)}
+                      style={{ width: 28, height: 16, cursor: "pointer" }}
+                    />
+                  </label>
+                )}
+              </div>
+              {/* Schedule summary as a reply */}
+              {msg.isScheduled && msg.userSchedule && (
+                <div
+                  className="bg-light rounded px-2 py-1 mt-1 small text-secondary"
+                  style={{ maxWidth: 320, fontSize: 12 }}
+                >
+                  <span>
+                    <b>Scheduled:</b> {msg.userSchedule}
+                  </span>
+                </div>
+              )}
+              <div
+                className="text-end text-secondary small mt-1"
+                style={{ fontSize: 11 }}
+              >
+                {msg.time
+                  ? formatWhatsAppTime(new Date(msg.time))
                   : msg.createdAt
                   ? formatWhatsAppTime(new Date(msg.createdAt))
                   : ""}
               </div>
             </div>
           </div>
-          {/* System-generated scheduling info for scheduled messages */}
-          {msg.scheduleTime && !msg.isSent && (
-            <div className="d-flex mb-2 justify-content-end">
-              <div
-                className="small text-secondary"
-                style={{
-                  background: "#f1f3f6",
-                  borderRadius: "8px",
-                  padding: "6px 12px",
-                  maxWidth: "70%",
-                  fontStyle: "italic",
-                }}
-              >
-                {`The above message sent at ${msg.createdAt ? formatWhatsAppTime(new Date(msg.createdAt)) : ""} has been scheduled for `}
-                <b>{msg.scheduleTime}</b>
-                {msg.interval && ` and will be automated at the interval: ${msg.interval}`}
-              </div>
-            </div>
-          )}
-        </React.Fragment>
-      ))}
-    </>
+        );
+      })}
+    </div>
   );
 }
 
