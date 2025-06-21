@@ -57,14 +57,14 @@ function Dashboard({ user, onLogout }) {
   const [activeChatId, setActiveChatId] = useState(null);
   const [message, setMessage] = useState("");
   const [mobileView, setMobileView] = useState("list");
-  const [scheduleType, setScheduleType] = useState("now"); // "now", "datetime", "interval"
+  const [scheduleType, setScheduleType] = useState("now");
   const [scheduleDateTime, setScheduleDateTime] = useState("");
   const [interval, setInterval] = useState("every_minute");
   const [showGroupModal, setShowGroupModal] = useState(false);
   const [newGroupName, setNewGroupName] = useState("");
   const [newGroupId, setNewGroupId] = useState("");
   const [creatingGroup, setCreatingGroup] = useState(false);
-  const [messagesByGroup, setMessagesByGroup] = useState({}); // { [groupId]: [messages] }
+  const [messagesByGroup, setMessagesByGroup] = useState({});
 
   useEffect(() => {
     const greetingInterval = setInterval(() => setGreeting(getGreeting()), 60 * 1000);
@@ -91,31 +91,6 @@ function Dashboard({ user, onLogout }) {
   }, [mobileView, activeChatId]);
 
   useEffect(() => {
-    const fetchMessages = async () => {
-      if (!activeChatId) return;
-      const token = localStorage.getItem("token");
-      try {
-        const res = await fetch(`${API_BASE_URL}/messages/group/${activeChatId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!res.ok) throw new Error("Failed to fetch messages");
-        const data = await res.json();
-        setMessagesByGroup((prev) => ({
-          ...prev,
-          [activeChatId]: data.messages || [],
-        }));
-      } catch (err) {
-        console.error("Failed to fetch messages:", err);
-        setMessagesByGroup((prev) => ({
-          ...prev,
-          [activeChatId]: [],
-        }));
-      }
-    };
-    fetchMessages();
-  }, [activeChatId]);
-
-  useEffect(() => {
     fetchGroups();
   }, []);
 
@@ -127,22 +102,44 @@ function Dashboard({ user, onLogout }) {
       });
       if (!res.ok) throw new Error("Failed to fetch groups");
       const data = await res.json();
-      setChats(
-        (data.groups || []).map((g) => ({
+      const chatList = (Array.isArray(data) ? data : [])
+        .sort((a, b) =>
+          new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+        )
+        .map((g) => ({
           id: g.groupId,
           name: g.displayName,
           lastMessage: "",
-          time: "",
+          time: g.createdAt || "",
           messages: [],
-        }))
-      );
+        }));
+      setChats(chatList);
+
+      chatList.forEach(async (chat) => {
+        try {
+          const resMsg = await fetch(`${API_BASE_URL}/messages/group/${chat.id}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (resMsg.ok) {
+            const msgData = await resMsg.json();
+            setMessagesByGroup((prev) => ({
+              ...prev,
+              [chat.id]: msgData.messages || [],
+            }));
+          }
+        } catch (err) {
+          setMessagesByGroup((prev) => ({
+            ...prev,
+            [chat.id]: [],
+          }));
+        }
+      });
     } catch (err) {
       console.error("Failed to fetch groups:", err);
-      setChats(sampleChats); // Fallback to sample chats
+      setChats(sampleChats);
     }
   };
 
-  // Helper to get cron string
   const getCronString = () => {
     if (scheduleType === "now") return "* * * * *";
     if (scheduleType === "datetime" && scheduleDateTime) {
@@ -166,23 +163,8 @@ function Dashboard({ user, onLogout }) {
   const handleSend = async (e) => {
     e.preventDefault();
     if (!message.trim() || !activeChatId) return;
-    const newMsg = {
-      text: message.trim(),
-      createdAt: new Date().toISOString(),
-      sent: true,
-    };
-    setMessagesByGroup((prev) => ({
-      ...prev,
-      [activeChatId]: [...(prev[activeChatId] || []), newMsg],
-    }));
-    setChats((prev) =>
-      prev.map((chat) =>
-        chat.id === activeChatId
-          ? { ...chat, lastMessage: message.trim(), time: newMsg.createdAt }
-          : chat
-      )
-    );
     setMessage("");
+
     try {
       const token = localStorage.getItem("token");
       const response = await fetch(`${API_BASE_URL}/messages/schedule`, {
@@ -199,6 +181,17 @@ function Dashboard({ user, onLogout }) {
       });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const resMsg = await fetch(`${API_BASE_URL}/messages/group/${activeChatId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (resMsg.ok) {
+        const msgData = await resMsg.json();
+        setMessagesByGroup((prev) => ({
+          ...prev,
+          [activeChatId]: msgData.messages || [],
+        }));
       }
     } catch (err) {
       console.error("Failed to send message:", err);
@@ -254,8 +247,8 @@ function Dashboard({ user, onLogout }) {
       });
       const data = await res.json();
       if (res.ok) {
-        await fetchGroups(); // Refresh the chat list from backend
-        setActiveChatId(data.groupId); // Open the new group
+        await fetchGroups();
+        setActiveChatId(newGroupId.trim());
         handleCloseGroupModal();
         if (window.innerWidth < 768) setMobileView("chat");
       } else {
@@ -278,10 +271,10 @@ function Dashboard({ user, onLogout }) {
       style={{
         background: LIGHT_BG,
         position: "fixed",
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
+        top: "0",
+        left: "0",
+        right: "0",
+        bottom: "0",
         fontFamily:
           "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif",
         overflow: "hidden",
@@ -322,40 +315,10 @@ function Dashboard({ user, onLogout }) {
             align-items: center;
             justify-content: center;
             border: none;
-          }
-          .sidebar-plus-btn {
-            position: fixed;
-            bottom: 24px;
-            right: 24px;
-            width: 56px;
-            height: 56px;
-            z-index: 2000;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-            background: ${PRIMARY};
-            color: #fff;
-            font-size: 28px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: none;
             border-radius: 50%;
           }
-          @media (max-width: 767.98px) {
-            .new-chat-btn {
-              display: none !important;
-            }
-            .message-input {
-              display: flex !important;
-              width: calc(100% - 52px) !important;
-            }
-          }
-          @media (min-width: 768px) {
-            .sidebar-plus-btn {
-              display: none !important;
-            }
-            .message-input {
-              width: calc(100% - 52px) !important;
-            }
+          .message-input {
+            width: calc(100% - 52px) !important;
           }
         `}
       </style>
@@ -371,8 +334,8 @@ function Dashboard({ user, onLogout }) {
           position: "absolute",
           zIndex: 2,
           borderRight: "1px solid #dee2e6",
-          top: 0,
-          left: 0,
+          top: "0",
+          left: "0",
           overflow: "hidden",
         }}
       >
@@ -416,32 +379,33 @@ function Dashboard({ user, onLogout }) {
                     {chat.lastMessage}
                   </div>
                 </div>
-                <div className="text-end small text-secondary ms-2" style={{ minWidth: 60 }}>
+                <div className="text-end small text-secondary ms-2" style={{ minWidth: "60px" }}>
                   {chat.time ? formatWhatsAppDate(new Date(chat.time)) : ""}
                 </div>
               </div>
             ))
           )}
         </div>
-        {/* Single "+" button for both desktop and mobile, only in chat list */}
+        {/* Single "+" button for creating new group */}
         <button
-          className="btn rounded-circle"
+          className="btn rounded-circle new-chat-btn"
           onClick={handleOpenGroupModal}
           title="Create new group"
           type="button"
           style={{
             background: PRIMARY,
             color: "#fff",
-            width: 56,
-            height: 56,
+            width: "56px",
+            height: "56px",
             boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
             alignItems: "center",
             justifyContent: "center",
             position: "absolute",
-            bottom: 24,
-            right: 24,
-            zIndex: 3,
+            bottom: "24px",
+            right: "24px",
+            zIndex: "3",
             display: "flex",
+            borderRadius: "50%",
           }}
         >
           <svg width="28" height="28" fill="currentColor" viewBox="0 0 20 20">
@@ -449,28 +413,6 @@ function Dashboard({ user, onLogout }) {
           </svg>
         </button>
       </aside>
-
-      {/* Mobile only floating "+" button */}
-      <button
-        className="btn rounded-circle sidebar-plus-btn"
-        onClick={handleOpenGroupModal}
-        title="Create new group"
-        type="button"
-        style={{
-          background: PRIMARY,
-          color: "#fff",
-          width: 56,
-          height: 56,
-          boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-          alignItems: "center",
-          justifyContent: "center",
-          display: window.innerWidth < 768 ? "flex" : "none",
-        }}
-      >
-        <svg width="28" height="28" fill="currentColor" viewBox="0 0 20 20">
-          <path d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" />
-        </svg>
-      </button>
 
       {/* Chat Area */}
       <main
@@ -483,8 +425,8 @@ function Dashboard({ user, onLogout }) {
           position: "absolute",
           zIndex: 1,
           width: "100%",
-          top: 0,
-          left: 0,
+          top: "0",
+          left: "0",
           marginLeft: window.innerWidth >= 768 ? "360px" : "0",
           transition: "margin-left 0.2s",
         }}
@@ -508,8 +450,8 @@ function Dashboard({ user, onLogout }) {
               <div
                 className="rounded-circle d-flex align-items-center justify-content-center me-3"
                 style={{
-                  width: 40,
-                  height: 40,
+                  width: "40px",
+                  height: "40px",
                   background: PRIMARY,
                   color: "#fff",
                   fontWeight: "bold",
@@ -555,7 +497,7 @@ function Dashboard({ user, onLogout }) {
                     boxShadow: "0 1px 2px rgba(0,0,0,0.1)",
                   }}
                 >
-                  <div>{msg.text}</div>
+                  <div>{msg.message}</div>
                   <div className="text-end small text-secondary" style={{ opacity: 0.75, fontSize: "0.75em" }}>
                     {msg.createdAt ? formatWhatsAppTime(new Date(msg.createdAt)) : ""}
                   </div>
