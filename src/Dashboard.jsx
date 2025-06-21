@@ -65,6 +65,7 @@ function Dashboard({ user, onLogout }) {
   const [newGroupId, setNewGroupId] = useState("");
   const [creatingGroup, setCreatingGroup] = useState(false);
   const [messagesByGroup, setMessagesByGroup] = useState({});
+  const [isSchedulerOpen, setIsSchedulerOpen] = useState(false);
 
   useEffect(() => {
     const greetingInterval = setInterval(() => setGreeting(getGreeting()), 60 * 1000);
@@ -280,6 +281,10 @@ function Dashboard({ user, onLogout }) {
     }
   };
 
+  const toggleScheduler = () => {
+    setIsSchedulerOpen((prev) => !prev);
+  };
+
   const activeChat = chats.find((chat) => chat.id === activeChatId);
   const activeMessages = messagesByGroup[activeChatId] || [];
 
@@ -337,7 +342,7 @@ function Dashboard({ user, onLogout }) {
             cursor: pointer;
           }
           .message-input {
-            flex: 1;
+            flex部分: flex: 1;
             min-width: 0;
           }
           .input-container {
@@ -365,8 +370,13 @@ function Dashboard({ user, onLogout }) {
             display: flex;
             flex-direction: column;
             gap: 8px;
-            animation: ${message.length > 0 ? "popUp 0.3s ease-in-out" : "popDown 0.3s ease-in-out"};
             z-index: 999;
+            transition: max-height 0.3s ease-in-out;
+            max-height: ${isSchedulerOpen && message.length > 0 ? '200px' : '40px'};
+            overflow: hidden;
+          }
+          .schedule-controls.collapsed {
+            max-height: 40px;
           }
           @keyframes popUp {
             from { transform: translateY(10px); opacity: 0; }
@@ -375,6 +385,14 @@ function Dashboard({ user, onLogout }) {
           @keyframes popDown {
             from { transform: translateY(0); opacity: 1; }
             to { transform: translateY(10px); opacity: 0; }
+          }
+          .scheduler-toggle-btn {
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
           }
         `}
       </style>
@@ -445,8 +463,6 @@ function Dashboard({ user, onLogout }) {
           onClick={handleOpenGroupModal}
           title="Create new group"
           type="button"
-          data-bs-toggle="modal"
-          data-bs-target="#groupModal"
         >
           <svg width="28" height="28" fill="currentColor" viewBox="0 0 20 20">
             <path d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" />
@@ -589,38 +605,50 @@ function Dashboard({ user, onLogout }) {
             }}
             onSubmit={handleSend}
           >
-            <div className="schedule-controls">
-              <select
-                className="form-select rounded-pill"
-                style={{ maxWidth: "200px" }}
-                value={scheduleType}
-                onChange={(e) => setScheduleType(e.target.value)}
+            <div className={`schedule-controls ${!isSchedulerOpen ? 'collapsed' : ''}`}>
+              <button
+                type="button"
+                className="btn btn-link scheduler-toggle-btn"
+                onClick={toggleScheduler}
+                style={{ color: PRIMARY }}
               >
-                <option value="now">Send Now</option>
-                <option value="datetime">Specific Time</option>
-                <option value="interval">Recurring</option>
-              </select>
-              {scheduleType === "datetime" && (
-                <input
-                  type="datetime-local"
-                  className="form-control rounded-pill"
-                  style={{ maxWidth: "200px" }}
-                  value={scheduleDateTime}
-                  onChange={(e) => setScheduleDateTime(e.target.value)}
-                />
-              )}
-              {scheduleType === "interval" && (
-                <select
-                  className="form-select rounded-pill"
-                  style={{ maxWidth: "200px" }}
-                  value={interval}
-                  onChange={(e) => setInterval(e.target.value)}
-                >
-                  <option value="every_minute">Every Minute</option>
-                  <option value="every_5_minutes">Every 5 Minutes</option>
-                  <option value="every_hour">Every Hour</option>
-                  <option value="every_day">Every Day</option>
-                </select>
+                {isSchedulerOpen ? '▼' : '▲'}
+              </button>
+              {isSchedulerOpen && (
+                <>
+                  <select
+                    className="form-select rounded-pill"
+                    style={{ maxWidth: "200px" }}
+                    value={scheduleType}
+                    onChange={(e) => setScheduleType(e.target.value)}
+                  >
+                    <option value="now">Send Now</option>
+                    <option value="datetime">Specific Time</option>
+                    <option value="interval">Recurring</option>
+                  </select>
+                  {scheduleType === "datetime" && (
+                    <input
+                      type="datetime-local"
+                      className="form-control rounded-pill"
+                      style={{ maxWidth: "200px" }}
+                      value={scheduleDateTime}
+                      onChange={(e) => setScheduleDateTime(e.target.value)}
+                    />
+                  )}
+                  {scheduleType === "interval" && (
+                    <select
+                      className="form-select rounded-pill"
+                      style={{ maxWidth: "200px" }}
+                      value={interval}
+                      onChange={(e) => setInterval(e.target.value)}
+                    >
+                      <option value="every_minute">Every Minute</option>
+                      <option value="every_5_minutes">Every 5 Minutes</option>
+                      <option value="every_hour">Every Hour</option>
+                      <option value="every_day">Every Day</option>
+                    </select>
+                  )}
+                </>
               )}
             </div>
             <div className="input-container">
