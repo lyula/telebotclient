@@ -62,10 +62,9 @@ const sampleChats = [
   },
 ];
 
-// Add this helper for group ID validation
+// Allow any negative number group ID or @username
 function isValidTelegramGroupId(id) {
-  // Accepts -100... (digits), or @username (letters, numbers, underscores, min 5 chars)
-  return /^-100\d{5,}$/.test(id) || /^@[a-zA-Z0-9_]{5,}$/.test(id);
+  return /^-\d+$/.test(id) || /^@[a-zA-Z0-9_]{5,}$/.test(id);
 }
 
 function Dashboard({ user, onLogout }) {
