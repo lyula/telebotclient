@@ -319,8 +319,8 @@ function Dashboard({ user, onLogout }) {
             border-bottom-right-radius: 2px;
           }
           .new-chat-btn {
-            position: absolute;
-            bottom: 64px;
+            position: fixed;
+            bottom: 80px;
             right: 16px;
             width: 56px;
             height: 56px;
@@ -345,16 +345,18 @@ function Dashboard({ user, onLogout }) {
             align-items: center;
             gap: 8px;
             flex-wrap: nowrap;
-            position: sticky;
-            bottom: 16px;
+            position: fixed;
+            bottom: 0;
+            left: ${window.innerWidth >= 768 ? '360px' : '0'};
+            right: 0;
             background: #fff;
             padding: 8px 16px;
-            z-index: 10;
+            z-index: 1000;
           }
           .schedule-controls {
-            position: absolute;
+            position: fixed;
             bottom: 64px;
-            left: 16px;
+            left: ${window.innerWidth >= 768 ? '360px' : '16px'};
             right: 16px;
             background: #fff;
             padding: 8px;
@@ -364,8 +366,7 @@ function Dashboard({ user, onLogout }) {
             flex-direction: column;
             gap: 8px;
             animation: ${message.length > 0 ? "popUp 0.3s ease-in-out" : "popDown 0.3s ease-in-out"};
-            visibility: ${message.length > 0 ? "visible" : "hidden"};
-            opacity: ${message.length > 0 ? "1" : "0"};
+            z-index: 999;
           }
           @keyframes popUp {
             from { transform: translateY(10px); opacity: 0; }
@@ -386,7 +387,7 @@ function Dashboard({ user, onLogout }) {
           width: window.innerWidth < 768 ? "100vw" : undefined,
           maxWidth: window.innerWidth < 768 ? "100vw" : "360px",
           height: "100vh",
-          position: "absolute",
+          position: "fixed",
           zIndex: 2,
           borderRight: "1px solid #dee2e6",
           top: "0",
@@ -444,6 +445,8 @@ function Dashboard({ user, onLogout }) {
           onClick={handleOpenGroupModal}
           title="Create new group"
           type="button"
+          data-bs-toggle="modal"
+          data-bs-target="#groupModal"
         >
           <svg width="28" height="28" fill="currentColor" viewBox="0 0 20 20">
             <path d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" />
@@ -459,13 +462,12 @@ function Dashboard({ user, onLogout }) {
         style={{
           height: "100vh",
           background: LIGHT_BG,
-          position: "absolute",
+          position: "fixed",
           zIndex: 1,
-          width: "100%",
+          width: window.innerWidth >= 768 ? "calc(100% - 360px)" : "100%",
           top: "0",
-          left: "0",
-          marginLeft: window.innerWidth >= 768 ? "360px" : "0",
-          transition: "margin-left 0.2s",
+          left: window.innerWidth >= 768 ? "360px" : "0",
+          transition: "left 0.2s",
         }}
       >
         {/* Chat header */}
@@ -515,7 +517,7 @@ function Dashboard({ user, onLogout }) {
           className="flex-grow-1 p-3 d-flex flex-column gap-2"
           style={{
             overflow: "auto",
-            paddingBottom: window.innerWidth < 768 ? "160px" : "120px",
+            paddingBottom: "120px",
           }}
         >
           {activeChat && activeMessages.length > 0 ? (
@@ -576,13 +578,13 @@ function Dashboard({ user, onLogout }) {
         {/* Message input */}
         {activeChat && (
           <form
-            className="p-3 border-top bg-white position-relative"
+            className="border-top bg-white"
             style={{
-              position: "sticky",
+              position: "fixed",
               bottom: "0",
-              left: "0",
+              left: window.innerWidth >= 768 ? "360px" : "0",
               right: "0",
-              zIndex: "10",
+              zIndex: "1000",
               background: "#fff",
             }}
             onSubmit={handleSend}
@@ -651,67 +653,72 @@ function Dashboard({ user, onLogout }) {
           </form>
         )}
         {/* Group Creation Modal */}
-        {showGroupModal && (
-          <div
-            style={{
-              position: "fixed",
-              top: "0",
-              left: "0",
-              width: "100vw",
-              height: "100vh",
-              background: "rgba(0,0,0,0.5)",
-              zIndex: "3000",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <form
-              onSubmit={handleCreateGroup}
-              style={{
-                background: "#fff",
-                padding: "32px",
-                borderRadius: "12px",
-                minWidth: "320px",
-                boxShadow: "0 4px 24px rgba(0,0,0,0.15)",
-                display: "flex",
-                flexDirection: "column",
-                gap: "16px",
-              }}
-            >
-              <h5 className="mb-3">Create New Group</h5>
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Group Name"
-                value={newGroupName}
-                onChange={(e) => setNewGroupName(e.target.value)}
-                required
-                maxLength={50}
-              />
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Telegram Group ID"
-                value={newGroupId}
-                onChange={(e) => setNewGroupId(e.target.value)}
-                required
-              />
-              <div className="d-flex gap-2 justify-content-end">
+        <div
+          className={`modal fade ${showGroupModal ? 'show' : ''}`}
+          id="groupModal"
+          tabIndex="-1"
+          style={{ display: showGroupModal ? 'block' : 'none' }}
+          aria-labelledby="groupModalLabel"
+          aria-hidden={!showGroupModal}
+        >
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title" id="groupModalLabel">Create New Group</h5>
                 <button
                   type="button"
-                  className="btn btn-secondary"
+                  className="btn-close"
                   onClick={handleCloseGroupModal}
-                  disabled={creatingGroup}
-                >
-                  Cancel
-                </button>
-                <button type="submit" className="btn btn-primary" disabled={creatingGroup}>
-                  {creatingGroup ? "Creating..." : "Create"}
-                </button>
+                  aria-label="Close"
+                ></button>
               </div>
-            </form>
+              <form onSubmit={handleCreateGroup}>
+                <div className="modal-body">
+                  <div className="mb-3">
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="Group Name"
+                      value={newGroupName}
+                      onChange={(e) => setNewGroupName(e.target.value)}
+                      required
+                      maxLength={50}
+                    />
+                  </div>
+                  <div className="mb-3">
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="Telegram Group ID"
+                      value={newGroupId}
+                      onChange={(e) => setNewGroupId(e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="modal-footer">
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={handleCloseGroupModal}
+                    disabled={creatingGroup}
+                  >
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn btn-primary" disabled={creatingGroup}>
+                    {creatingGroup ? "Creating..." : "Create"}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
+        </div>
+        {showGroupModal && (
+          <div
+            className="modal-backdrop fade show"
+            onClick={handleCloseGroupModal}
+            style={{ zIndex: 1040 }}
+          ></div>
         )}
       </main>
     </div>
