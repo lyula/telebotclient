@@ -209,7 +209,10 @@ function Dashboard({ user, onLogout }) {
     setActiveChatId(null);
   };
 
-  const handleOpenGroupModal = () => setShowGroupModal(true);
+  const handleOpenGroupModal = () => {
+    setShowGroupModal(true);
+  };
+
   const handleCloseGroupModal = () => {
     setShowGroupModal(false);
     setNewGroupName("");
@@ -293,7 +296,7 @@ function Dashboard({ user, onLogout }) {
           }
           .new-chat-btn {
             position: absolute;
-            bottom: 32px;
+            bottom: 64px;
             right: 16px;
             width: 56px;
             height: 56px;
@@ -307,6 +310,7 @@ function Dashboard({ user, onLogout }) {
             justify-content: center;
             border: none;
             border-radius: 50%;
+            cursor: pointer;
           }
           .message-input {
             flex: 1;
@@ -317,10 +321,15 @@ function Dashboard({ user, onLogout }) {
             align-items: center;
             gap: 8px;
             flex-wrap: nowrap;
+            position: sticky;
+            bottom: 16px;
+            background: #fff;
+            padding: 8px 16px;
+            z-index: 10;
           }
           .schedule-controls {
             position: absolute;
-            bottom: 70px;
+            bottom: 64px;
             left: 16px;
             right: 16px;
             background: #fff;
@@ -335,12 +344,12 @@ function Dashboard({ user, onLogout }) {
             opacity: ${message.length > 0 ? "1" : "0"};
           }
           @keyframes popUp {
-            from { transform: translateY(20px); opacity: 0; }
+            from { transform: translateY(10px); opacity: 0; }
             to { transform: translateY(0); opacity: 1; }
           }
           @keyframes popDown {
             from { transform: translateY(0); opacity: 1; }
-            to { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(10px); opacity: 0; }
           }
         `}
       </style>
@@ -376,7 +385,7 @@ function Dashboard({ user, onLogout }) {
           {greeting}
         </div>
         {/* Chat List */}
-        <div className="flex-grow-1 overflow-auto bg-white" style={{ paddingBottom: "100px" }}>
+        <div className="flex-grow-1 overflow-auto bg-white" style={{ paddingBottom: "120px" }}>
           {chats.length === 0 ? (
             <div className="text-center text-muted mt-5">No chats yet. Start a new chat!</div>
           ) : (
@@ -482,7 +491,7 @@ function Dashboard({ user, onLogout }) {
           className="flex-grow-1 p-3 d-flex flex-column gap-2"
           style={{
             overflow: "auto",
-            paddingBottom: window.innerWidth < 768 ? "140px" : "120px",
+            paddingBottom: window.innerWidth < 768 ? "160px" : "120px",
           }}
         >
           {activeChat && activeMessages.length > 0 ? (
@@ -543,7 +552,7 @@ function Dashboard({ user, onLogout }) {
         {/* Message input */}
         {activeChat && (
           <form
-            className="p-3 border-top px-3 bg-white position-relative"
+            className="p-3 border-top bg-white position-relative"
             style={{
               position: "sticky",
               bottom: "0",
