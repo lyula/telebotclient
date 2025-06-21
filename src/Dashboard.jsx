@@ -288,487 +288,575 @@ function Dashboard({ user, onLogout }) {
   const activeChat = chats.find((chat) => chat.id === activeChatId);
   const activeMessages = messagesByGroup[activeChatId] || [];
 
+  useEffect(() => {
+    if (showGroupModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [showGroupModal]);
+
   return (
-    <div
-      className="w-100 h-100 vh-100 d-flex"
-      style={{
-        background: LIGHT_BG,
-        position: "fixed",
-        top: "0",
-        left: "0",
-        right: "0",
-        bottom: "0",
-        fontFamily:
-          "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif",
-        overflow: "hidden",
-      }}
-    >
-      <style>
-        {`
-          .chat-bubble-sent::after, .chat-bubble-received::after {
-            content: '';
-            position: absolute;
-            bottom: 8px;
-            width: 0;
-            height: 0;
-            border: 6px solid transparent;
-          }
-          .chat-bubble-sent::after {
-            right: -6px;
-            border-left-color: ${PRIMARY};
-            border-bottom-left-radius: 2px;
-          }
-          .chat-bubble-received::after {
-            left: -6px;
-            border-right-color: #FFFFFF;
-            border-bottom-right-radius: 2px;
-          }
-          .new-chat-btn {
-            position: fixed;
-            bottom: 16px;
-            right: 16px;
-            width: 56px;
-            height: 56px;
-            z-index: 1050;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-            background: ${PRIMARY};
-            color: #fff;
-            font-size: 28px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: none;
-            border-radius: 50%;
-            cursor: pointer;
-          }
-          .message-input {
-            flex: 1;
-            min-width: 0;
-          }
-          .input-container {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            flex-wrap: nowrap;
-            position: fixed;
-            bottom: 0;
-            left: ${window.innerWidth >= 768 ? '360px' : '0'};
-            right: 0;
-            background: #fff;
-            padding: 8px 16px;
-            z-index: 1000;
-          }
-          .schedule-controls {
-            position: fixed;
-            bottom: 64px;
-            left: ${window.innerWidth >= 768 ? '360px' : '16px'};
-            right: 16px;
-            background: #fff;
-            padding: 8px;
-            border-radius: 8px;
-            box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            z-index: 999;
-            transition: max-height 0.3s ease-in-out;
-            max-height: ${isSchedulerOpen && message.length > 0 ? '200px' : '40px'};
-            overflow: hidden;
-          }
-          .schedule-controls.collapsed {
-            max-height: 40px;
-          }
-          @keyframes popUp {
-            from { transform: translateY(10px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-          }
-          @keyframes popDown {
-            from { transform: translateY(0); opacity: 1; }
-            to { transform: translateY(10px); opacity: 0; }
-          }
-          .scheduler-toggle-btn {
-            width: 40px;
-            height: 40px;
-            padding: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-          }
-          .modal-mobile {
-            z-index: 1060;
-          }
-          @media (max-width: 767px) {
-            .modal-mobile .modal-dialog {
-              margin: 0;
+    <>
+      <div
+        className="w-100 h-100 vh-100 d-flex"
+        style={{
+          background: LIGHT_BG,
+          position: "fixed",
+          top: "0",
+          left: "0",
+          right: "0",
+          bottom: "0",
+          fontFamily:
+            "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif",
+          overflow: "hidden",
+        }}
+      >
+        <style>
+          {`
+            .chat-bubble-sent::after, .chat-bubble-received::after {
+              content: '';
+              position: absolute;
+              bottom: 8px;
+              width: 0;
+              height: 0;
+              border: 6px solid transparent;
+            }
+            .chat-bubble-sent::after {
+              right: -6px;
+              border-left-color: ${PRIMARY};
+              border-bottom-left-radius: 2px;
+            }
+            .chat-bubble-received::after {
+              left: -6px;
+              border-right-color: #FFFFFF;
+              border-bottom-right-radius: 2px;
+            }
+            .new-chat-btn {
               position: fixed;
-              top: 0;
-              left: 0;
-              width: 100%;
-              height: 100%;
+              bottom: 16px;
+              right: 16px;
+              width: 56px;
+              height: 56px;
+              z-index: 1050;
+              box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+              background: ${PRIMARY};
+              color: #fff;
+              font-size: 28px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              border: none;
+              border-radius: 50%;
+              cursor: pointer;
+            }
+            .message-input {
+              flex: 1;
+              min-width: 0;
+            }
+            .input-container {
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              flex-wrap: nowrap;
+              position: fixed;
+              bottom: 0;
+              left: ${window.innerWidth >= 768 ? '360px' : '0'};
+              right: 0;
+              background: #fff;
+              padding: 8px 16px;
+              z-index: 1000;
+            }
+            .schedule-controls {
+              position: fixed;
+              bottom: 64px;
+              left: ${window.innerWidth >= 768 ? '360px' : '16px'};
+              right: 16px;
+              background: #fff;
+              padding: 8px;
+              border-radius: 8px;
+              box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
+              display: flex;
+              flex-direction: column;
+              gap: 8px;
+              z-index: 999;
+              transition: max-height 0.3s ease-in-out;
+              max-height: ${isSchedulerOpen && message.length > 0 ? '200px' : '40px'};
+              overflow: hidden;
+            }
+            .schedule-controls.collapsed {
+              max-height: 40px;
+            }
+            @keyframes popUp {
+              from { transform: translateY(10px); opacity: 0; }
+              to { transform: translateY(0); opacity: 1; }
+            }
+            @keyframes popDown {
+              from { transform: translateY(0); opacity: 1; }
+              to { transform: translateY(10px); opacity: 0; }
+            }
+            .scheduler-toggle-btn {
+              width: 40px;
+              height: 40px;
+              padding: 0;
               display: flex;
               align-items: center;
               justify-content: center;
             }
-            .new-chat-btn {
-              z-index: 1060; /* Ensure button is above chatlist */
+            .modal-mobile {
+              z-index: 1060;
             }
-          }
-        `}
-      </style>
-      {/* Sidebar (Chat List) */}
-      <aside
-        className={`d-flex flex-column bg-white ${
-          mobileView === "chat" && window.innerWidth < 768 ? "d-none" : "d-flex"
-        } w-100 col-md-4 col-lg-3 col-xl-2`}
-        style={{
-          width: window.innerWidth < 768 ? "100vw" : undefined,
-          maxWidth: window.innerWidth < 768 ? "100vw" : "360px",
-          height: "100vh",
-          position: "fixed",
-          zIndex: 2,
-          borderRight: "1px solid #dee2e6",
-          top: "0",
-          left: "0",
-          overflow: "hidden",
-        }}
-      >
-        {/* Header */}
-        <div
-          className="d-flex align-items-center justify-content-between px-3 py-3"
-          style={{ background: PRIMARY, color: "#fff" }}
-        >
-          <span className="fw-semibold fs-5">{user?.username || "User"}</span>
-          <button className="btn btn-outline-light btn-sm" onClick={onLogout}>
-            Logout
-          </button>
-        </div>
-        {/* Greeting */}
-        <div className="px-3 py-2 text-secondary border-bottom small">
-          {greeting}
-        </div>
-        {/* Chat List */}
-        <div className="flex-grow-1 overflow-auto bg-white" style={{ paddingBottom: "80px" }}>
-          {chats.length === 0 ? (
-            <div className="text-center text-muted mt-5">No chats yet. Start a new chat!</div>
-          ) : (
-            chats.map((chat) => (
-              <div
-                key={chat.id}
-                className={`d-flex align-items-center px-3 py-3 border-bottom ${
-                  chat.id === activeChatId ? "bg-light" : ""
-                }`}
-                style={{ cursor: "pointer" }}
-                onClick={() => handleSelectChat(chat.id)}
-              >
-                <div className="flex-grow-1">
-                  <div className="fw-semibold">{chat.name}</div>
-                  <div
-                    className="text-secondary small"
-                    style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
-                  >
-                    {chat.lastMessage}
-                  </div>
-                </div>
-                <div className="text-end small text-secondary ms-2" style={{ minWidth: "60px" }}>
-                  {chat.time ? formatWhatsAppDate(new Date(chat.time)) : ""}
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-        {/* Single "+" button for creating new group */}
-        <button
-          className="btn rounded-circle new-chat-btn"
-          onClick={handleOpenGroupModal}
-          title="Create new group"
-          type="button"
-        >
-          <svg width="28" height="28" fill="currentColor" viewBox="0 0 20 20">
-            <path d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" />
-          </svg>
-        </button>
-      </aside>
-
-      {/* Chat Area */}
-      <main
-        className={`flex-grow-1 d-flex flex-column ${
-          mobileView === "list" && window.innerWidth < 768 ? "d-none" : "d-flex"
-        }`}
-        style={{
-          height: "100vh",
-          background: LIGHT_BG,
-          position: "fixed",
-          zIndex: 1,
-          width: window.innerWidth >= 768 ? "calc(100% - 360px)" : "100%",
-          top: "0",
-          left: window.innerWidth >= 768 ? "360px" : "0",
-          transition: "left 0.2s",
-        }}
-      >
-        {/* Chat header */}
-        <div
-          className="d-flex align-items-center justify-content-between px-3 py-3 border-bottom bg-white"
-          style={{ minHeight: "60px" }}
-        >
-          {activeChat ? (
-            <>
-              <div className="d-flex align-items-center">
-                <div
-                  className="rounded-circle d-flex align-items-center justify-content-center me-3"
-                  style={{
-                    width: "40px",
-                    height: "40px",
-                    background: PRIMARY,
-                    color: "#fff",
-                    fontWeight: "bold",
-                    fontSize: "18px",
-                  }}
-                >
-                  {activeChat?.name ? activeChat.name[0] : ""}
-                </div>
-                <div>
-                  <div className="fw-semibold">{activeChat.name}</div>
-                  <div className="small text-secondary">
-                    {activeChat.time ? formatWhatsAppDate(new Date(activeChat.time)) : ""}
-                  </div>
-                </div>
-              </div>
-              {window.innerWidth < 768 && (
-                <button
-                  className="btn btn-link d-md-none"
-                  style={{ color: PRIMARY, fontSize: "22px" }}
-                  onClick={handleBack}
-                >
-                  ←
-                </button>
-              )}
-            </>
-          ) : (
-            <span className="text-muted">Select a chat to start messaging</span>
-          )}
-        </div>
-        {/* Messages */}
-        <div
-          className="flex-grow-1 p-3 d-flex flex-column gap-2"
+            @media (max-width: 767px) {
+              .modal-mobile .modal-dialog {
+                margin: 0;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+              }
+              .new-chat-btn {
+                z-index: 1060; /* Ensure button is above chatlist */
+              }
+            }
+          `}
+        </style>
+        {/* Sidebar (Chat List) */}
+        <aside
+          className={`d-flex flex-column bg-white ${
+            mobileView === "chat" && window.innerWidth < 768 ? "d-none" : "d-flex"
+          } w-100 col-md-4 col-lg-3 col-xl-2`}
           style={{
-            overflow: "auto",
-            paddingBottom: "120px",
+            width: window.innerWidth < 768 ? "100vw" : undefined,
+            maxWidth: window.innerWidth < 768 ? "100vw" : "360px",
+            height: "100vh",
+            position: "fixed",
+            zIndex: 2,
+            borderRight: "1px solid #dee2e6",
+            top: "0",
+            left: "0",
+            overflow: "hidden",
           }}
         >
-          {activeChat && activeMessages.length > 0 ? (
-            activeMessages.map((msg, idx) => (
-              <React.Fragment key={idx}>
+          {/* Header */}
+          <div
+            className="d-flex align-items-center justify-content-between px-3 py-3"
+            style={{ background: PRIMARY, color: "#fff" }}
+          >
+            <span className="fw-semibold fs-5">{user?.username || "User"}</span>
+            <button className="btn btn-outline-light btn-sm" onClick={onLogout}>
+              Logout
+            </button>
+          </div>
+          {/* Greeting */}
+          <div className="px-3 py-2 text-secondary border-bottom small">
+            {greeting}
+          </div>
+          {/* Chat List */}
+          <div className="flex-grow-1 overflow-auto bg-white" style={{ paddingBottom: "80px" }}>
+            {chats.length === 0 ? (
+              <div className="text-center text-muted mt-5">No chats yet. Start a new chat!</div>
+            ) : (
+              chats.map((chat) => (
                 <div
-                  className={`d-flex mb-2 ${msg.sent ? "justify-content-end" : "justify-content-start"}`}
+                  key={chat.id}
+                  className={`d-flex align-items-center px-3 py-3 border-bottom ${
+                    chat.id === activeChatId ? "bg-light" : ""
+                  }`}
+                  style={{ cursor: "pointer" }}
+                  onClick={() => handleSelectChat(chat.id)}
                 >
-                  <div
-                    className={`d-flex flex-column py-2 px-3 rounded-3 position-relative ${
-                      msg.sent ? "chat-bubble-sent" : "chat-bubble-received"
-                    }`}
-                    style={{
-                      background: msg.sent ? PRIMARY : "#FFFFFF",
-                      color: msg.sent ? "#fff" : "#000",
-                      maxWidth: "70%",
-                      wordBreak: "break-word",
-                      boxShadow: "0 1px 2px rgba(0,0,0,0.1)",
-                    }}
-                  >
-                    <div>{msg.message}</div>
-                    <div className="text-end small text-secondary" style={{ opacity: 0.75, fontSize: "0.75em" }}>
-                      {msg.sentAt
-                        ? `Sent at ${formatWhatsAppTime(new Date(msg.sentAt))}`
-                        : msg.createdAt
-                        ? formatWhatsAppTime(new Date(msg.createdAt))
-                        : ""}
+                  <div className="flex-grow-1">
+                    <div className="fw-semibold">{chat.name}</div>
+                    <div
+                      className="text-secondary small"
+                      style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
+                    >
+                      {chat.lastMessage}
                     </div>
+                  </div>
+                  <div className="text-end small text-secondary ms-2" style={{ minWidth: "60px" }}>
+                    {chat.time ? formatWhatsAppDate(new Date(chat.time)) : ""}
                   </div>
                 </div>
-                {/* System-generated scheduling info for scheduled messages */}
-                {msg.scheduleTime && !msg.isSent && (
-                  <div className="d-flex mb-2 justify-content-end">
-                    <div
-                      className="small text-secondary"
-                      style={{
-                        background: "#f1f3f6",
-                        borderRadius: "8px",
-                        padding: "6px 12px",
-                        maxWidth: "70%",
-                        fontStyle: "italic",
-                      }}
-                    >
-                      {`The above message sent at ${msg.createdAt ? formatWhatsAppTime(new Date(msg.createdAt)) : ""} has been scheduled for `}
-                      <b>{msg.scheduleTime}</b>
-                      {msg.interval && ` and will be automated at the interval: ${msg.interval}`}
-                    </div>
-                  </div>
-                )}
-              </React.Fragment>
-            ))
+              ))
+            )}
+          </div>
+          {/* "+" button: INSIDE chatlist for desktop, floating for mobile */}
+          {window.innerWidth < 768 ? (
+            <button
+              className="btn rounded-circle new-chat-btn"
+              onClick={handleOpenGroupModal}
+              title="Create new group"
+              type="button"
+            >
+              <svg width="28" height="28" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
+                />
+              </svg>
+            </button>
           ) : (
-            <div className="text-center text-muted my-auto">
-              {activeChat ? "No messages yet. Say hello!" : "Select a chat to start messaging."}
-            </div>
-          )}
-        </div>
-        {/* Message input */}
-        {activeChat && (
-          <form
-            className="border-top bg-white"
-            style={{
-              position: "fixed",
-              bottom: "0",
-              left: window.innerWidth >= 768 ? "360px" : "0",
-              right: "0",
-              zIndex: "1000",
-              background: "#fff",
-            }}
-            onSubmit={handleSend}
-          >
-            <div className={`schedule-controls ${!isSchedulerOpen ? 'collapsed' : ''}`}>
+            <>
+              {/* Floating "+" button for desktop */}
               <button
-                type="button"
-                className="btn btn-link scheduler-toggle-btn"
-                onClick={toggleScheduler}
-                style={{ color: PRIMARY }}
-              >
-                {isSchedulerOpen ? '▼' : '▲'}
-              </button>
-              {isSchedulerOpen && (
-                <>
-                  <select
-                    className="form-select rounded-pill"
-                    style={{ maxWidth: "200px" }}
-                    value={scheduleType}
-                    onChange={(e) => setScheduleType(e.target.value)}
-                  >
-                    <option value="now">Send Now</option>
-                    <option value="datetime">Specific Time</option>
-                    <option value="interval">Recurring</option>
-                  </select>
-                  {scheduleType === "datetime" && (
-                    <input
-                      type="datetime-local"
-                      className="form-control rounded-pill"
-                      style={{ maxWidth: "200px" }}
-                      value={scheduleDateTime}
-                      onChange={(e) => setScheduleDateTime(e.target.value)}
-                    />
-                  )}
-                  {scheduleType === "interval" && (
-                    <select
-                      className="form-select rounded-pill"
-                      style={{ maxWidth: "200px" }}
-                      value={interval}
-                      onChange={(e) => setInterval(e.target.value)}
-                    >
-                      <option value="every_minute">Every Minute</option>
-                      <option value="every_5_minutes">Every 5 Minutes</option>
-                      <option value="every_hour">Every Hour</option>
-                      <option value="every_day">Every Day</option>
-                    </select>
-                  )}
-                </>
-              )}
-            </div>
-            <div className="input-container">
-              <input
-                type="text"
-                className="form-control rounded-pill border-0 message-input"
-                style={{ background: "#f5f7fa" }}
-                placeholder="Type a message..."
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-              />
-              <button
-                type="submit"
-                className="btn btn-primary rounded-circle"
+                className="btn btn-primary rounded-circle new-chat-btn"
                 style={{
-                  width: "40px",
-                  height: "40px",
-                  padding: "0",
+                  width: "56px",
+                  height: "56px",
+                  fontSize: "28px",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  marginLeft: "8px",
+                  position: "absolute",
+                  bottom: "24px",
+                  right: "24px",
+                  zIndex: 1050,
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
                 }}
+                onClick={handleOpenGroupModal}
+                title="Create new group"
+                type="button"
               >
-                <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
+                <svg width="28" height="28" fill="currentColor" viewBox="0 0 20 20">
+                  <path
+                    d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
+                  />
                 </svg>
               </button>
-            </div>
-          </form>
-        )}
-        {/* Group Creation Modal */}
-        <div
-          className={`modal fade ${showGroupModal ? 'show' : ''} ${window.innerWidth < 768 ? 'modal-mobile' : ''}`}
-          id="groupModal"
-          tabIndex="-1"
-          style={{ display: showGroupModal ? 'block' : 'none' }}
-          aria-labelledby="groupModalLabel"
-          aria-hidden={!showGroupModal}
+            </>
+          )}
+        </aside>
+
+        {/* Chat Area */}
+        <main
+          className={`flex-grow-1 d-flex flex-column ${
+            mobileView === "list" && window.innerWidth < 768 ? "d-none" : "d-flex"
+          }`}
+          style={{
+            height: "100vh",
+            background: LIGHT_BG,
+            position: "fixed",
+            zIndex: 1,
+            width: window.innerWidth >= 768 ? "calc(100% - 360px)" : "100%",
+            top: "0",
+            left: window.innerWidth >= 768 ? "360px" : "0",
+            transition: "left 0.2s",
+          }}
         >
-          <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title" id="groupModalLabel">Create New Group</h5>
+          {/* Chat header */}
+          <div
+            className="d-flex align-items-center justify-content-between px-3 py-3 border-bottom bg-white"
+            style={{ minHeight: "60px" }}
+          >
+            {activeChat ? (
+              <>
+                <div className="d-flex align-items-center">
+                  <div
+                    className="rounded-circle d-flex align-items-center justify-content-center me-3"
+                    style={{
+                      width: "40px",
+                      height: "40px",
+                      background: PRIMARY,
+                      color: "#fff",
+                      fontWeight: "bold",
+                      fontSize: "18px",
+                    }}
+                  >
+                    {activeChat?.name ? activeChat.name[0] : ""}
+                  </div>
+                  <div>
+                    <div className="fw-semibold">{activeChat.name}</div>
+                    <div className="small text-secondary">
+                      {activeChat.time ? formatWhatsAppDate(new Date(activeChat.time)) : ""}
+                    </div>
+                  </div>
+                </div>
+                {window.innerWidth < 768 && (
+                  <button
+                    className="btn btn-link d-md-none"
+                    style={{ color: PRIMARY, fontSize: "22px" }}
+                    onClick={handleBack}
+                  >
+                    ←
+                  </button>
+                )}
+              </>
+            ) : (
+              <span className="text-muted">Select a chat to start messaging</span>
+            )}
+          </div>
+          {/* Messages */}
+          <div
+            className="flex-grow-1 p-3 d-flex flex-column gap-2"
+            style={{
+              overflow: "auto",
+              paddingBottom: "120px",
+            }}
+          >
+            {activeChat && activeMessages.length > 0 ? (
+              activeMessages.map((msg, idx) => (
+                <React.Fragment key={idx}>
+                  <div
+                    className={`d-flex mb-2 ${msg.sent ? "justify-content-end" : "justify-content-start"}`}
+                  >
+                    <div
+                      className={`d-flex flex-column py-2 px-3 rounded-3 position-relative ${
+                        msg.sent ? "chat-bubble-sent" : "chat-bubble-received"
+                      }`}
+                      style={{
+                        background: msg.sent ? PRIMARY : "#FFFFFF",
+                        color: msg.sent ? "#fff" : "#000",
+                        maxWidth: "70%",
+                        wordBreak: "break-word",
+                        boxShadow: "0 1px 2px rgba(0,0,0,0.1)",
+                      }}
+                    >
+                      <div>{msg.message}</div>
+                      <div className="text-end small text-secondary" style={{ opacity: 0.75, fontSize: "0.75em" }}>
+                        {msg.sentAt
+                          ? `Sent at ${formatWhatsAppTime(new Date(msg.sentAt))}`
+                          : msg.createdAt
+                          ? formatWhatsAppTime(new Date(msg.createdAt))
+                          : ""}
+                      </div>
+                    </div>
+                  </div>
+                  {/* System-generated scheduling info for scheduled messages */}
+                  {msg.scheduleTime && !msg.isSent && (
+                    <div className="d-flex mb-2 justify-content-end">
+                      <div
+                        className="small text-secondary"
+                        style={{
+                          background: "#f1f3f6",
+                          borderRadius: "8px",
+                          padding: "6px 12px",
+                          maxWidth: "70%",
+                          fontStyle: "italic",
+                        }}
+                      >
+                        {`The above message sent at ${msg.createdAt ? formatWhatsAppTime(new Date(msg.createdAt)) : ""} has been scheduled for `}
+                        <b>{msg.scheduleTime}</b>
+                        {msg.interval && ` and will be automated at the interval: ${msg.interval}`}
+                      </div>
+                    </div>
+                  )}
+                </React.Fragment>
+              ))
+            ) : (
+              <div className="text-center text-muted my-auto">
+                {activeChat ? "No messages yet. Say hello!" : "Select a chat to start messaging."}
+              </div>
+            )}
+          </div>
+          {/* Message input */}
+          {activeChat && (
+            <form
+              className="border-top bg-white"
+              style={{
+                position: "fixed",
+                bottom: "0",
+                left: window.innerWidth >= 768 ? "360px" : "0",
+                right: "0",
+                zIndex: "1000",
+                background: "#fff",
+              }}
+              onSubmit={handleSend}
+            >
+              <div className={`schedule-controls ${!isSchedulerOpen ? 'collapsed' : ''}`}>
                 <button
                   type="button"
-                  className="btn-close"
-                  onClick={handleCloseGroupModal}
-                  aria-label="Close"
-                ></button>
+                  className="btn btn-link scheduler-toggle-btn"
+                  onClick={toggleScheduler}
+                  style={{ color: PRIMARY }}
+                >
+                  {isSchedulerOpen ? '▼' : '▲'}
+                </button>
+                {isSchedulerOpen && (
+                  <>
+                    <select
+                      className="form-select rounded-pill"
+                      style={{ maxWidth: "200px" }}
+                      value={scheduleType}
+                      onChange={(e) => setScheduleType(e.target.value)}
+                    >
+                      <option value="now">Send Now</option>
+                      <option value="datetime">Specific Time</option>
+                      <option value="interval">Recurring</option>
+                    </select>
+                    {scheduleType === "datetime" && (
+                      <input
+                        type="datetime-local"
+                        className="form-control rounded-pill"
+                        style={{ maxWidth: "200px" }}
+                        value={scheduleDateTime}
+                        onChange={(e) => setScheduleDateTime(e.target.value)}
+                      />
+                    )}
+                    {scheduleType === "interval" && (
+                      <select
+                        className="form-select rounded-pill"
+                        style={{ maxWidth: "200px" }}
+                        value={interval}
+                        onChange={(e) => setInterval(e.target.value)}
+                      >
+                        <option value="every_minute">Every Minute</option>
+                        <option value="every_5_minutes">Every 5 Minutes</option>
+                        <option value="every_hour">Every Hour</option>
+                        <option value="every_day">Every Day</option>
+                      </select>
+                    )}
+                  </>
+                )}
               </div>
-              <form onSubmit={handleCreateGroup}>
-                <div className="modal-body">
-                  <div className="mb-3">
-                    <input
-                      type="text"
-                      className="form-control"
-                      placeholder="Group Name"
-                      value={newGroupName}
-                      onChange={(e) => setNewGroupName(e.target.value)}
-                      required
-                      maxLength={50}
-                    />
-                  </div>
-                  <div className="mb-3">
-                    <input
-                      type="text"
-                      className="form-control"
-                      placeholder="Telegram Group ID"
-                      value={newGroupId}
-                      onChange={(e) => setNewGroupId(e.target.value)}
-                      required
-                    />
-                  </div>
-                </div>
-                <div className="modal-footer">
+              <div className="input-container">
+                <input
+                  type="text"
+                  className="form-control rounded-pill border-0 message-input"
+                  style={{ background: "#f5f7fa" }}
+                  placeholder="Type a message..."
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                />
+                <button
+                  type="submit"
+                  className="btn btn-primary rounded-circle"
+                  style={{
+                    width: "40px",
+                    height: "40px",
+                    padding: "0",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginLeft: "8px",
+                  }}
+                >
+                  <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
+                  </svg>
+                </button>
+              </div>
+            </form>
+          )}
+        </main>
+      </div>
+
+      {/* Group Creation Modal - OUTSIDE main layout, always at top level */}
+      {showGroupModal && (
+        <>
+          <div
+            className={`modal fade show ${window.innerWidth < 768 ? 'modal-mobile' : ''}`}
+            id="groupModal"
+            tabIndex="-1"
+            style={{
+              display: 'block',
+              zIndex: 3000,
+              position: 'fixed',
+              top: window.innerWidth < 768 ? 0 : 0,
+              left: window.innerWidth < 768 ? 0 : (window.innerWidth >= 768 ? 360 : 0),
+              width: window.innerWidth < 768 ? '100vw' : (window.innerWidth >= 768 ? 'calc(100vw - 360px)' : '100vw'),
+              height: '100vh',
+              overflowY: 'auto',
+              background: 'rgba(0,0,0,0.01)',
+            }}
+            aria-labelledby="groupModalLabel"
+            aria-modal="true"
+            role="dialog"
+          >
+            <div className="modal-dialog modal-dialog-centered" style={{
+              minHeight: '100vh',
+              margin: 0,
+              ...(window.innerWidth < 768
+                ? {
+                    width: '100vw',
+                    maxWidth: '100vw',
+                    height: '100vh',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }
+                : {
+                    width: '100%',
+                    maxWidth: 400,
+                    height: '100vh',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }),
+            }}>
+              <div className="modal-content" style={window.innerWidth < 768 ? {width: '95vw', maxWidth: 400} : {width: '95%', maxWidth: 400}}>
+                <div className="modal-header">
+                  <h5 className="modal-title" id="groupModalLabel">Create New Group</h5>
                   <button
                     type="button"
-                    className="btn btn-secondary"
+                    className="btn-close"
                     onClick={handleCloseGroupModal}
-                    disabled={creatingGroup}
-                  >
-                    Cancel
-                  </button>
-                  <button type="submit" className="btn btn-primary" disabled={creatingGroup}>
-                    {creatingGroup ? "Creating..." : "Create"}
-                  </button>
+                    aria-label="Close"
+                  ></button>
                 </div>
-              </form>
+                <form onSubmit={handleCreateGroup}>
+                  <div className="modal-body">
+                    <div className="mb-3">
+                      <input
+                        type="text"
+                        className="form-control"
+                        placeholder="Group Name"
+                        value={newGroupName}
+                        onChange={(e) => setNewGroupName(e.target.value)}
+                        required
+                        maxLength={50}
+                      />
+                    </div>
+                    <div className="mb-3">
+                      <input
+                        type="text"
+                        className="form-control"
+                        placeholder="Telegram Group ID"
+                        value={newGroupId}
+                        onChange={(e) => setNewGroupId(e.target.value)}
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="modal-footer">
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={handleCloseGroupModal}
+                      disabled={creatingGroup}
+                    >
+                      Cancel
+                    </button>
+                    <button type="submit" className="btn btn-primary" disabled={creatingGroup}>
+                      {creatingGroup ? "Creating..." : "Create"}
+                    </button>
+                  </div>
+                </form>
+              </div>
             </div>
           </div>
-        </div>
-        {showGroupModal && (
           <div
             className="modal-backdrop fade show"
+            style={{
+              zIndex: 2999,
+              position: 'fixed',
+              top: 0,
+              left: window.innerWidth < 768 ? 0 : (window.innerWidth >= 768 ? 360 : 0),
+              width: window.innerWidth < 768 ? '100vw' : (window.innerWidth >= 768 ? 'calc(100vw - 360px)' : '100vw'),
+              height: '100vh',
+              background: 'rgba(0,0,0,0.5)',
+            }}
             onClick={handleCloseGroupModal}
-            style={{ zIndex: 1040 }}
           ></div>
-        )}
-      </main>
-    </div>
+        </>
+      )}
+    </>
   );
 }
 
