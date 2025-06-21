@@ -199,17 +199,8 @@ function Dashboard({ user, onLogout }) {
     }
   };
 
-  const handleNewChat = () => {
-    const newId = Date.now();
-    const newChat = {
-      id: newId,
-      name: "New Chat",
-      lastMessage: "",
-      time: "",
-      messages: [],
-    };
-    setChats([newChat, ...chats]);
-    setActiveChatId(newId);
+  const handleSelectChat = (chatId) => {
+    setActiveChatId(chatId);
     if (window.innerWidth < 768) setMobileView("chat");
   };
 
@@ -302,8 +293,8 @@ function Dashboard({ user, onLogout }) {
           }
           .new-chat-btn {
             position: absolute;
-            bottom: 24px;
-            right: 24px;
+            bottom: 16px;
+            right: 16px;
             width: 56px;
             height: 56px;
             z-index: 1050;
@@ -318,7 +309,20 @@ function Dashboard({ user, onLogout }) {
             border-radius: 50%;
           }
           .message-input {
-            width: calc(100% - 52px) !important;
+            flex: 1;
+            min-width: 0;
+          }
+          .input-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: nowrap;
+          }
+          .schedule-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding-top: 8px;
           }
         `}
       </style>
@@ -354,7 +358,7 @@ function Dashboard({ user, onLogout }) {
           {greeting}
         </div>
         {/* Chat List */}
-        <div className="flex-grow-1 overflow-auto bg-white" style={{ paddingBottom: "70px" }}>
+        <div className="flex-grow-1 overflow-auto bg-white" style={{ paddingBottom: "80px" }}>
           {chats.length === 0 ? (
             <div className="text-center text-muted mt-5">No chats yet. Start a new chat!</div>
           ) : (
@@ -365,10 +369,7 @@ function Dashboard({ user, onLogout }) {
                   chat.id === activeChatId ? "bg-light" : ""
                 }`}
                 style={{ cursor: "pointer" }}
-                onClick={() => {
-                  setActiveChatId(chat.id);
-                  if (window.innerWidth < 768) setMobileView("chat");
-                }}
+                onClick={() => handleSelectChat(chat.id)}
               >
                 <div className="flex-grow-1">
                   <div className="fw-semibold">{chat.name}</div>
@@ -392,21 +393,6 @@ function Dashboard({ user, onLogout }) {
           onClick={handleOpenGroupModal}
           title="Create new group"
           type="button"
-          style={{
-            background: PRIMARY,
-            color: "#fff",
-            width: "56px",
-            height: "56px",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-            alignItems: "center",
-            justifyContent: "center",
-            position: "absolute",
-            bottom: "24px",
-            right: "24px",
-            zIndex: "3",
-            display: "flex",
-            borderRadius: "50%",
-          }}
         >
           <svg width="28" height="28" fill="currentColor" viewBox="0 0 20 20">
             <path d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" />
@@ -476,33 +462,57 @@ function Dashboard({ user, onLogout }) {
           className="flex-grow-1 p-3 d-flex flex-column gap-2"
           style={{
             overflow: "auto",
-            paddingBottom: window.innerWidth < 768 ? "90px" : "80px",
+            paddingBottom: window.innerWidth < 768 ? "140px" : "120px",
           }}
         >
           {activeChat && activeMessages.length > 0 ? (
             activeMessages.map((msg, idx) => (
-              <div
-                key={idx}
-                className={`d-flex mb-2 ${msg.sent ? "justify-content-end" : "justify-content-start"}`}
-              >
+              <React.Fragment key={idx}>
                 <div
-                  className={`d-flex flex-column py-2 px-3 rounded-3 position-relative ${
-                    msg.sent ? "chat-bubble-sent" : "chat-bubble-received"
-                  }`}
-                  style={{
-                    background: msg.sent ? PRIMARY : "#FFFFFF",
-                    color: msg.sent ? "#fff" : "#000",
-                    maxWidth: "70%",
-                    wordBreak: "break-word",
-                    boxShadow: "0 1px 2px rgba(0,0,0,0.1)",
-                  }}
+                  className={`d-flex mb-2 ${msg.sent ? "justify-content-end" : "justify-content-start"}`}
                 >
-                  <div>{msg.message}</div>
-                  <div className="text-end small text-secondary" style={{ opacity: 0.75, fontSize: "0.75em" }}>
-                    {msg.createdAt ? formatWhatsAppTime(new Date(msg.createdAt)) : ""}
+                  <div
+                    className={`d-flex flex-column py-2 px-3 rounded-3 position-relative ${
+                      msg.sent ? "chat-bubble-sent" : "chat-bubble-received"
+                    }`}
+                    style={{
+                      background: msg.sent ? PRIMARY : "#FFFFFF",
+                      color: msg.sent ? "#fff" : "#000",
+                      maxWidth: "70%",
+                      wordBreak: "break-word",
+                      boxShadow: "0 1px 2px rgba(0,0,0,0.1)",
+                    }}
+                  >
+                    <div>{msg.message}</div>
+                    <div className="text-end small text-secondary" style={{ opacity: 0.75, fontSize: "0.75em" }}>
+                      {msg.sentAt
+                        ? `Sent at ${formatWhatsAppTime(new Date(msg.sentAt))}`
+                        : msg.createdAt
+                        ? formatWhatsAppTime(new Date(msg.createdAt))
+                        : ""}
+                    </div>
                   </div>
                 </div>
-              </div>
+                {/* System-generated scheduling info for scheduled messages */}
+                {msg.scheduleTime && !msg.isSent && (
+                  <div className="d-flex mb-2 justify-content-end">
+                    <div
+                      className="small text-secondary"
+                      style={{
+                        background: "#f1f3f6",
+                        borderRadius: "8px",
+                        padding: "6px 12px",
+                        maxWidth: "70%",
+                        fontStyle: "italic",
+                      }}
+                    >
+                      {`The above message sent at ${msg.createdAt ? formatWhatsAppTime(new Date(msg.createdAt)) : ""} has been scheduled for `}
+                      <b>{msg.scheduleTime}</b>
+                      {msg.interval && ` and will be automated at the interval: ${msg.interval}`}
+                    </div>
+                  </div>
+                )}
+              </React.Fragment>
             ))
           ) : (
             <div className="text-center text-muted my-auto">
@@ -513,7 +523,7 @@ function Dashboard({ user, onLogout }) {
         {/* Message input */}
         {activeChat && (
           <form
-            className="p-3 border-top px-3 d-flex bg-white py-3 d-flex flex-column flex-md-row align-items-center"
+            className="p-3 border-top px-3 bg-white d-flex flex-column gap-2"
             style={{
               position: "sticky",
               bottom: "0",
@@ -521,44 +531,70 @@ function Dashboard({ user, onLogout }) {
               right: "0",
               zIndex: "10",
               background: "#fff",
-              gap: "12px",
             }}
             onSubmit={handleSend}
           >
-            <input
-              type="text"
-              className="form-control rounded-pill border-0 message-input"
-              style={{ background: "#f5f7fa", flex: "1", minWidth: "0" }}
-              placeholder="Type a message..."
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-            />
-            <button
-              className="btn rounded-circle d-flex align-items-center justify-content-center"
-              type="submit"
-              style={{
-                background: PRIMARY,
-                color: "#fff",
-                width: "48px",
-                height: "48px",
-                flexShrink: "0",
-                fontSize: "22px",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.10)",
-                transition: "background 0.2s",
-              }}
-              title="Send"
-              disabled={!message.trim()}
-            >
-              <svg
-                width="22"
-                height="22"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-                style={{ margin: "auto" }}
+            <div className="input-container">
+              <input
+                type="text"
+                className="form-control rounded-pill border-0 message-input"
+                style={{ background: "#f5f7fa" }}
+                placeholder="Type a message..."
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+              />
+              <button
+                type="submit"
+                className="btn btn-primary rounded-circle"
+                style={{
+                  width: "40px",
+                  height: "40px",
+                  padding: "0",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginLeft: "8px",
+                }}
               >
-                <path d="M2.293 10.293a1 1 0 011.32-.083l.094.083 11 7a1 1 0 01-.094 1.651l-11-7a1 1 0 01-.094-1.651z" />
-              </svg>
-            </button>
+                <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
+                </svg>
+              </button>
+            </div>
+            <div className="schedule-controls">
+              <select
+                className="form-select rounded-pill"
+                style={{ maxWidth: "200px" }}
+                value={scheduleType}
+                onChange={(e) => setScheduleType(e.target.value)}
+              >
+                <option value="now">Send Now</option>
+                <option value="datetime">Specific Time</option>
+                <option value="interval">Recurring</option>
+              </select>
+              {scheduleType === "datetime" && (
+                <input
+                  type="datetime-local"
+                  className="form-control rounded-pill"
+                  style={{ maxWidth: "200px" }}
+                  value={scheduleDateTime}
+                  onChange={(e) => setScheduleDateTime(e.target.value)}
+                />
+              )}
+              {scheduleType === "interval" && (
+                <select
+                  className="form-select rounded-pill"
+                  style={{ maxWidth: "200px" }}
+                  value={interval}
+                  onChange={(e) => setInterval(e.target.value)}
+                >
+                  <option value="every_minute">Every Minute</option>
+                  <option value="every_5_minutes">Every 5 Minutes</option>
+                  <option value="every_hour">Every Hour</option>
+                  <option value="every_day">Every Day</option>
+                </select>
+              )}
+            </div>
           </form>
         )}
         {/* Group Creation Modal */}
