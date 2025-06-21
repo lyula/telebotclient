@@ -403,24 +403,9 @@ function Dashboard({ user, onLogout }) {
             ))
           )}
         </div>
-        {/* "+" button: only in chat list, never in chatbox */}
+        {/* Single "+" button for both desktop and mobile, only in chat list */}
         <button
-          className="btn rounded-circle new-chat-btn"
-          onClick={handleOpenGroupModal}
-          title="Create new group"
-          type="button"
-          style={{
-            display: window.innerWidth >= 768 ? "flex" : "none", // Desktop only
-            zIndex: 3,
-          }}
-        >
-          <svg width="28" height="28" fill="currentColor" viewBox="0 0 20 20">
-            <path d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" />
-          </svg>
-        </button>
-        {/* Mobile only "+" button */}
-        <button
-          className="btn rounded-circle sidebar-plus-btn"
+          className="btn rounded-circle"
           onClick={handleOpenGroupModal}
           title="Create new group"
           type="button"
@@ -432,11 +417,11 @@ function Dashboard({ user, onLogout }) {
             boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
             alignItems: "center",
             justifyContent: "center",
-            display: window.innerWidth < 768 ? "flex" : "none", // Mobile only
             position: "absolute",
             bottom: 24,
             right: 24,
             zIndex: 3,
+            display: "flex"
           }}
         >
           <svg width="28" height="28" fill="currentColor" viewBox="0 0 20 20">
