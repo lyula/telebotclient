@@ -677,13 +677,14 @@ function Dashboard({ user, onLogout }) {
               }}
               onSubmit={handleSend}
             >
-              {isMessageInputFocused && (
+              {(isMessageInputFocused || message.length > 0) && (
                 <div className={`schedule-controls ${!isSchedulerOpen ? 'collapsed' : ''}`}>
                   <button
                     type="button"
                     className="btn btn-link scheduler-toggle-btn"
                     onClick={toggleScheduler}
                     style={{ color: PRIMARY }}
+                    tabIndex={-1}
                   >
                     {isSchedulerOpen ? '▼' : '▲'}
                   </button>
