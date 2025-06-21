@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { API_BASE_URL } from "./api";
 import GroupModal from "./GroupModal";
-import ChatMessages from "./ChatMessages_temp";
+import ChatMessages from "./ChatMessages";
 import ChatList from "./ChatList";
 
 // Theme colors
