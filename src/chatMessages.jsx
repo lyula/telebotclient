@@ -12,7 +12,7 @@ function ChatMessages({ activeChat, activeMessages, formatWhatsAppTime }) {
   if (activeMessages.length === 0) {
     return (
       <div className="text-center text-muted my-auto">
-        No messages yet. Say hello!
+        No messages yet.Say hello!
       </div>
     );
   }
