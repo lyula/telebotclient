@@ -35,6 +35,10 @@ function Dashboard({ user, onLogout }) {
   const [scheduleType, setScheduleType] = useState("now"); // "now", "datetime", "interval"
   const [scheduleDateTime, setScheduleDateTime] = useState("");
   const [interval, setInterval] = useState("every_minute");
+  const [showGroupModal, setShowGroupModal] = useState(false);
+  const [newGroupName, setNewGroupName] = useState("");
+  const [newGroupId, setNewGroupId] = useState("");
+  const [creatingGroup, setCreatingGroup] = useState(false);
 
   useEffect(() => {
     const greetingInterval = setInterval(() => setGreeting(getGreeting()), 60 * 1000);
@@ -86,11 +90,11 @@ function Dashboard({ user, onLogout }) {
 
   const handleSend = async (e) => {
     e.preventDefault();
-    if (!message.trim() || !activeChat) return;
+    if (!message.trim() || !activeChat || message.trim().length === 0) return;
 
     const newMsg = {
-      text: message,
-      time: new Date().toISOString(), // Store as ISO string
+      text: message.trim(),
+      time: new Date().toISOString(),
       sent: true,
     };
 
@@ -100,7 +104,7 @@ function Dashboard({ user, onLogout }) {
           ? {
               ...chat,
               messages: [...chat.messages, newMsg],
-              lastMessage: message,
+              lastMessage: message.trim(),
               time: newMsg.time,
             }
           : chat
@@ -110,7 +114,7 @@ function Dashboard({ user, onLogout }) {
 
     try {
       const token = localStorage.getItem("token");
-      await fetch(`${API_BASE_URL}/messages/schedule`, {
+      const response = await fetch(`${API_BASE_URL}/messages/schedule`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -118,12 +122,16 @@ function Dashboard({ user, onLogout }) {
         },
         body: JSON.stringify({
           groupId: activeChatId,
-          message: message,
+          message: message.trim(),
           scheduleTime: getCronString(),
         }),
       });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
     } catch (err) {
       console.error("Failed to send message:", err);
+      alert("Failed to send message. Please try again.");
     }
   };
 
@@ -144,6 +152,59 @@ function Dashboard({ user, onLogout }) {
   const handleBack = () => {
     setMobileView("list");
     setActiveChatId(null);
+  };
+
+  const handleOpenGroupModal = () => setShowGroupModal(true);
+  const handleCloseGroupModal = () => {
+    setShowGroupModal(false);
+    setNewGroupName("");
+    setNewGroupId("");
+  };
+
+  const handleCreateGroup = async (e) => {
+    e.preventDefault();
+    if (!newGroupName.trim() || !newGroupId.trim()) {
+      alert("Please fill in all fields");
+      return;
+    }
+    setCreatingGroup(true);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API_BASE_URL}/groups`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          displayName: newGroupName.trim(),
+          groupId: newGroupId.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setChats((prev) => [
+          {
+            id: data.groupId,
+            name: data.displayName,
+            lastMessage: "",
+            time: "",
+            messages: [],
+          },
+          ...prev,
+        ]);
+        setActiveChatId(data.groupId);
+        handleCloseGroupModal();
+        if (window.innerWidth < 768) setMobileView("chat");
+      } else {
+        alert(data.message || "Failed to create group");
+      }
+    } catch (err) {
+      console.error("Failed to create group:", err);
+      alert("Failed to create group. Please check your connection and try again.");
+    } finally {
+      setCreatingGroup(false);
+    }
   };
 
   return (
@@ -294,8 +355,8 @@ function Dashboard({ user, onLogout }) {
         {/* Desktop only "+" button */}
         <button
           className="btn rounded-circle new-chat-btn"
-          onClick={handleNewChat}
-          title="Start new chat"
+          onClick={handleOpenGroupModal}
+          title="Create new group"
           type="button"
         >
           <svg width="28" height="28" fill="currentColor" viewBox="0 0 20 20">
@@ -307,8 +368,8 @@ function Dashboard({ user, onLogout }) {
       {/* Mobile only floating "+" button */}
       <button
         className="btn rounded-circle sidebar-plus-btn"
-        onClick={handleNewChat}
-        title="Start new chat"
+        onClick={handleOpenGroupModal}
+        title="Create new group"
         type="button"
         style={{
           background: PRIMARY,
@@ -339,19 +400,19 @@ function Dashboard({ user, onLogout }) {
           width: "100%",
           top: 0,
           left: 0,
-          marginLeft: window.innerWidth >= 768 ? 360 : 0,
+          marginLeft: window.innerWidth >= 768 ? "360px" : "0",
           transition: "margin-left 0.2s",
         }}
       >
         {/* Chat header */}
         <div
           className="d-flex align-items-center px-3 py-3 border-bottom bg-white"
-          style={{ minHeight: 60 }}
+          style={{ minHeight: "60px" }}
         >
           {window.innerWidth < 768 && (
             <button
               className="btn btn-link me-2 d-md-none"
-              style={{ color: PRIMARY, fontSize: 22 }}
+              style={{ color: PRIMARY, fontSize: "22px" }}
               onClick={handleBack}
             >
               ←
@@ -367,7 +428,7 @@ function Dashboard({ user, onLogout }) {
                   background: PRIMARY,
                   color: "#fff",
                   fontWeight: "bold",
-                  fontSize: 18,
+                  fontSize: "18px",
                 }}
               >
                 {activeChat.name[0]}
@@ -395,8 +456,8 @@ function Dashboard({ user, onLogout }) {
         <div
           className="flex-grow-1 p-3 d-flex flex-column gap-2"
           style={{
-            overflowY: "auto",
-            paddingBottom: window.innerWidth < 768 ? 90 : 80,
+            overflow: "auto",
+            paddingBottom: window.innerWidth < 768 ? "90px" : "80px",
           }}
         >
           {activeChat && activeChat.messages.length > 0 ? (
@@ -406,7 +467,7 @@ function Dashboard({ user, onLogout }) {
                 className={`d-flex mb-2 ${msg.sent ? "justify-content-end" : "justify-content-start"}`}
               >
                 <div
-                  className={`px-3 py-2 rounded-3 position-relative ${
+                  className={`d-flex mb-3 py-2 rounded-3 position-relative ${
                     msg.sent ? "chat-bubble-sent" : "chat-bubble-received"
                   }`}
                   style={{
@@ -441,58 +502,36 @@ function Dashboard({ user, onLogout }) {
         {/* Message input */}
         {activeChat && (
           <form
-            className="p-3 border-top d-flex bg-white flex-column flex-md-row align-items-center"
+            className="p-3 border-top px-3 d-flex bg-white py-3 d-flex flex-column flex-md-row align-items-center"
             style={{
               position: "sticky",
-              bottom: 0,
-              left: 0,
-              right: 0,
-              zIndex: 10,
+              bottom: "0",
+              left: "0",
+              right: "0",
+              zIndex: "10",
               background: "#fff",
               gap: "12px",
             }}
             onSubmit={handleSend}
           >
             <input
-              className="form-control rounded-pill border-0 message-input mb-2 mb-md-0"
-              style={{ background: "#f5f7fa", flex: 1, minWidth: 0 }}
+              type="text"
+              className="form-control rounded-pill border-0 message-input"
+              style={{ background: "#f5f7fa", flex: "1", minWidth: "0" }}
               placeholder="Type a message..."
               value={message}
               onChange={(e) => setMessage(e.target.value)}
             />
-            <select
-              className="form-select w-auto mb-2 mb-md-0"
-              value={scheduleType}
-              onChange={(e) => setScheduleType(e.target.value)}
-            >
-              <option value="now">Send Now</option>
-              <option value="datetime">Schedule Date/Time</option>
-              <option value="interval">Repeat Interval</option>
-            </select>
-            {scheduleType === "datetime" && (
-              <input
-                type="datetime-local"
-                className="form-control w-auto mb-2 mb-md-0"
-                value={scheduleDateTime}
-                onChange={(e) => setScheduleDateTime(e.target.value)}
-              />
-            )}
-            {scheduleType === "interval" && (
-              <select
-                className="form-select w-auto mb-2 mb-md-0"
-                value={interval}
-                onChange={(e) => setInterval(e.target.value)}
-              >
-                <option value="every_minute">Every Minute</option>
-                <option value="every_5_minutes">Every 5 Minutes</option>
-                <option value="every_hour">Every Hour</option>
-                <option value="every_day">Every Day</option>
-              </select>
-            )}
             <button
               className="btn rounded-circle d-flex align-items-center justify-content-center"
-              style={{ background: PRIMARY, color: "#fff", width: 40, height: 40, flexShrink: 0 }}
               type="submit"
+              style={{
+                background: PRIMARY,
+                color: "#fff",
+                width: "40px",
+                height: "40px",
+                flexShrink: "0",
+              }}
             >
               <svg
                 width="22"
@@ -501,10 +540,73 @@ function Dashboard({ user, onLogout }) {
                 viewBox="0 0 20 20"
                 style={{ margin: "auto" }}
               >
-                <path d="M2.293 10.293a1 1 0 011.32-.083l.094.083 11-7a1 1 0 011.497.868v14a1 1 0 01-1.497.868l-11-7a1 1 0 01-.094-1.651z" />
+                <path d="M2.293 10.293a1 1 0 011.32-.083l.094.083 11 7a1 1 0 01-.094 1.651l-11-7a1 1 0 01-.094-1.651z" />
               </svg>
             </button>
           </form>
+        )}
+        {/* Group Creation Modal */}
+        {showGroupModal && (
+          <div
+            style={{
+              position: "fixed",
+              top: "0",
+              left: "0",
+              width: "100vw",
+              height: "100vh",
+              background: "rgba(0,0,0,0.5)",
+              zIndex: "3000",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <form
+              onSubmit={handleCreateGroup}
+              style={{
+                background: "#fff",
+                padding: "32px",
+                borderRadius: "12px",
+                minWidth: "320px",
+                boxShadow: "0 4px 24px rgba(0,0,0,0.15)",
+                display: "flex",
+                flexDirection: "column",
+                gap: "16px",
+              }}
+            >
+              <h5 className="mb-3">Create New Group</h5>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Group Name"
+                value={newGroupName}
+                onChange={(e) => setNewGroupName(e.target.value)}
+                required
+                maxLength={50}
+              />
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Telegram Group ID"
+                value={newGroupId}
+                onChange={(e) => setNewGroupId(e.target.value)}
+                required
+              />
+              <div className="d-flex gap-2 justify-content-end">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={handleCloseGroupModal}
+                  disabled={creatingGroup}
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn-primary" disabled={creatingGroup}>
+                  {creatingGroup ? "Creating..." : "Create"}
+                </button>
+              </div>
+            </form>
+          </div>
         )}
       </main>
     </div>
