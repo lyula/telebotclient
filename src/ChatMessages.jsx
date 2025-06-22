@@ -1,9 +1,25 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 
 function ChatMessages({ activeMessages, formatWhatsAppTime, onTogglePaused, activeChat, onManualRefresh }) {
-  // Add state for animation
+  const chatContainerRef = useRef(null);
   const [refreshing, setRefreshing] = useState(false);
   const refreshTimeout = useRef();
+
+  // Add scroll event to trigger refresh when scrolled to bottom
+  useEffect(() => {
+    const chatDiv = chatContainerRef.current;
+    if (!chatDiv) return;
+
+    const handleScroll = () => {
+      // Allow a small threshold (e.g., 20px) for "near bottom"
+      if (chatDiv.scrollHeight - chatDiv.scrollTop - chatDiv.clientHeight < 20) {
+        onManualRefresh();
+      }
+    };
+
+    chatDiv.addEventListener("scroll", handleScroll);
+    return () => chatDiv.removeEventListener("scroll", handleScroll);
+  }, [onManualRefresh]);
 
   if (activeMessages.length === 0) {
     return (
@@ -14,7 +30,7 @@ function ChatMessages({ activeMessages, formatWhatsAppTime, onTogglePaused, acti
   }
 
   return (
-    <div style={{ marginBottom: 72 }}>
+    <div ref={chatContainerRef} style={{ marginBottom: 72, overflowY: "auto", height: "100%" }}>
       {activeMessages.map((msg, idx) => {
         const isSent = msg.sent || msg.isSent || msg.user === (activeChat?.user || "me");
         const hasUpdate =
@@ -225,6 +241,7 @@ function ChatMessages({ activeMessages, formatWhatsAppTime, onTogglePaused, acti
                     transition: "background 0.2s",
                     cursor: "pointer",
                   }}
+                  // Make sure the button is NOT disabled
                   onClick={() => {
                     setRefreshing(true);
                     if (refreshTimeout.current) clearTimeout(refreshTimeout.current);

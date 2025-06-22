@@ -312,7 +312,10 @@ function Dashboard({ user, onLogout }) {
       }
 
       if (scheduleType === "datetime") {
-        body.scheduleDateTime = scheduleDateTime;
+        // Convert the local datetime-local value to an ISO string with timezone offset
+        // scheduleDateTime is in "YYYY-MM-DDTHH:mm" format (local time)
+        const localDate = new Date(scheduleDateTime);
+        body.scheduleDateTime = localDate.toISOString(); // This is UTC, safe for backend
       }
 
       const response = await fetch(`${API_BASE_URL}/messages/schedule`, {
@@ -824,7 +827,7 @@ function Dashboard({ user, onLogout }) {
                               style={{ maxWidth: "100px" }}
                               placeholder="Interval"
                               value={customIntervalValue}
-                              onChange={(e) => setCustomIntervalValue(e.target.value)}
+                              onChange={(e) => setCustomIntervalValue(e.target.value)} // <-- ADD THIS LINE
                               required
                             />
                             <select
