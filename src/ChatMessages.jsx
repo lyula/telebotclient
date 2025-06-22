@@ -232,7 +232,7 @@ function ChatMessages({ activeMessages, formatWhatsAppTime, onTogglePaused, acti
                   display: "flex",
                   justifyContent: isSent ? "flex-end" : "flex-start",
                   marginTop: 2,
-                  marginBottom: 16,
+                  marginBottom: 4,
                 }}
               >
                 <button
@@ -251,12 +251,16 @@ function ChatMessages({ activeMessages, formatWhatsAppTime, onTogglePaused, acti
                     transition: "background 0.2s",
                     cursor: "pointer",
                   }}
-                  // Make sure the button is NOT disabled
+                  // Remove any disabled prop, always allow click
                   onClick={() => {
-                    setRefreshing(true);
-                    if (refreshTimeout.current) clearTimeout(refreshTimeout.current);
-                    refreshTimeout.current = setTimeout(() => setRefreshing(false), 700);
-                    onManualRefresh();
+                    // Immediately allow another click by resetting refreshing
+                    setRefreshing(false);
+                    setTimeout(() => {
+                      setRefreshing(true);
+                      if (refreshTimeout.current) clearTimeout(refreshTimeout.current);
+                      refreshTimeout.current = setTimeout(() => setRefreshing(false), 700);
+                      onManualRefresh();
+                    }, 0);
                   }}
                 >
                   <svg
@@ -272,7 +276,6 @@ function ChatMessages({ activeMessages, formatWhatsAppTime, onTogglePaused, acti
                     <path d="M17.65 6.35A7.95 7.95 0 0 0 12 4V1L7 6l5 5V7c1.93 0 3.68.78 4.95 2.05A7 7 0 1 1 5 12H3a9 9 0 1 0 14.65-5.65z"/>
                   </svg>
                 </button>
-                {/* Add animation CSS */}
                 <style>
                   {`
                     .refresh-anim svg {
