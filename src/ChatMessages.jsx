@@ -74,6 +74,18 @@ function ChatMessages({ activeMessages, formatWhatsAppTime, onTogglePaused, acti
                   </span>
                 </div>
               )}
+              {/* Schedule type indication */}
+              {msg.scheduleType && (
+                <div className="small text-secondary mt-1">
+                  <b>Schedule Type:</b> {msg.scheduleType === "now"
+                    ? "Send Now"
+                    : msg.scheduleType === "datetime"
+                      ? "Specific Time"
+                      : msg.scheduleType === "interval"
+                        ? "Recurring"
+                        : msg.scheduleType}
+                </div>
+              )}
               <div
                 className="text-end text-secondary small mt-1"
                 style={{ fontSize: 11 }}

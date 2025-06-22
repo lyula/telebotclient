@@ -262,14 +262,12 @@ function Dashboard({ user, onLogout }) {
 
   const handleSend = async (e) => {
     e.preventDefault();
-    if (sending) return; // Prevent double submit
+    if (sending) return;
     if (!message.trim() || !activeChatId) return;
-    // Prevent sending if scheduleType is not selected
     if (!scheduleType) {
       setNotification({ show: true, message: "Please select a schedule type." });
       return;
     }
-    // For recurring, prevent sending if any required field is missing
     if (
       scheduleType === "interval" &&
       (
@@ -280,14 +278,15 @@ function Dashboard({ user, onLogout }) {
       setNotification({ show: true, message: "Please fill all interval and repeat fields." });
       return;
     }
-    setMessage("");
-    setSending(true); // Start loading
+
+    setSending(true);
 
     try {
       const token = localStorage.getItem("token");
       let body = {
         groupId: activeChatId,
         message: message.trim(),
+        scheduleType,
       };
 
       if (scheduleType === "interval") {
@@ -309,16 +308,27 @@ function Dashboard({ user, onLogout }) {
           const preset = presetMap[interval];
           if (!preset) {
             setNotification({ show: true, message: "Please select a valid interval option." });
+            setSending(false);
             return;
           }
           intervalValue = preset.value;
           intervalUnit = preset.unit;
         }
+        // Ensure repeatCount is a positive number
+        const repeat = Number(repeatCount);
+        if (!intervalValue || !intervalUnit || !repeat || isNaN(repeat) || repeat <= 0) {
+          setNotification({ show: true, message: "Please fill all interval and repeat fields." });
+          setSending(false);
+          return;
+        }
         body.intervalValue = intervalValue;
         body.intervalUnit = intervalUnit;
-        body.repeatCount = Number(repeatCount);
+        body.repeatCount = repeat;
       }
-      // ...handle other schedule types as needed...
+
+      if (scheduleType === "datetime") {
+        body.scheduleDateTime = scheduleDateTime;
+      }
 
       const response = await fetch(`${API_BASE_URL}/messages/schedule`, {
         method: "POST",
