@@ -176,7 +176,7 @@ function ChatMessages({ activeMessages, formatWhatsAppTime, onTogglePaused, acti
                     {/* Tip at the end */}
                     <div style={{ marginTop: 6 }}>
                       <span style={{ color: "#0d6efd" }}>
-                        Tip: Refresh to see updated sent counts below.
+                        Tip: Refresh below to see updated sent counts.
                       </span>
                     </div>
                   </div>
