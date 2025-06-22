@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { API_BASE_URL } from "./api";
 import GroupModal from "./GroupModal";
@@ -92,6 +92,8 @@ function Dashboard({ user, onLogout }) {
   const [scheduleInput, setScheduleInput] = useState("");
   const [showSchedulePopover, setShowSchedulePopover] = useState(false);
   const [isMessageInputFocused, setIsMessageInputFocused] = useState(false);
+  const [repeatCount, setRepeatCount] = useState(1);
+  const messagesEndRef = useRef(null);
 
   useEffect(() => {
     const greetingInterval = setInterval(() => setGreeting(getGreeting()), 60 * 1000);
@@ -264,18 +266,46 @@ function Dashboard({ user, onLogout }) {
 
     try {
       const token = localStorage.getItem("token");
+      let body = {
+        groupId: activeChatId,
+        message: message.trim(),
+      };
+
+      if (scheduleType === "interval") {
+        // Use custom interval if selected, otherwise map preset to value/unit
+        let intervalValue, intervalUnit;
+        if (interval === "custom") {
+          intervalValue = Number(customIntervalValue);
+          intervalUnit = customIntervalUnit;
+        } else {
+          // Map preset intervals to value/unit
+          const presetMap = {
+            every_minute: { value: 1, unit: "minutes" },
+            every_3_minutes: { value: 3, unit: "minutes" },
+            every_5_minutes: { value: 5, unit: "minutes" },
+            every_10_minutes: { value: 10, unit: "minutes" },
+            every_15_minutes: { value: 15, unit: "minutes" },
+            every_30_minutes: { value: 30, unit: "minutes" },
+            every_hour: { value: 1, unit: "hours" },
+            every_day: { value: 1, unit: "days" },
+          };
+          const preset = presetMap[interval];
+          intervalValue = preset.value;
+          intervalUnit = preset.unit;
+        }
+        body.intervalValue = intervalValue;
+        body.intervalUnit = intervalUnit;
+        body.repeatCount = Number(repeatCount);
+      }
+      // ...handle other schedule types as needed...
+
       const response = await fetch(`${API_BASE_URL}/messages/schedule`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          groupId: activeChatId,
-          message: message.trim(),
-          schedule: getCronString(),
-          userSchedule: getUserScheduleString(),
-        }),
+        body: JSON.stringify(body),
       });
       if (!response.ok) {
         const data = await response.json();
@@ -429,21 +459,30 @@ function Dashboard({ user, onLogout }) {
     };
   }, [showGroupModal]);
 
+  // Scroll to bottom when activeMessages change
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [activeMessages]);
+
   const isSendDisabled = () => {
     if (!message.trim()) return true;
     if (scheduleType === "now") return false;
     if (scheduleType === "datetime") return !scheduleDateTime;
     if (scheduleType === "interval") {
-      if (!interval) return true;
       if (interval === "custom") {
         return (
           !customIntervalValue ||
           isNaN(customIntervalValue) ||
           Number(customIntervalValue) <= 0 ||
-          !customIntervalUnit
+          !customIntervalUnit ||
+          !repeatCount ||
+          isNaN(repeatCount) ||
+          Number(repeatCount) <= 0
         );
       }
-      return false;
+      return !repeatCount || isNaN(repeatCount) || Number(repeatCount) <= 0;
     }
     return true;
   };
@@ -653,15 +692,16 @@ function Dashboard({ user, onLogout }) {
             className="flex-grow-1 p-3 d-flex flex-column gap-2"
             style={{
               overflow: "auto",
-              paddingBottom: "120px",
+              paddingBottom: "180px", // Increased for input/scheduler height
             }}
           >
             <ChatMessages
               activeChat={activeChat}
               activeMessages={activeMessages}
               formatWhatsAppTime={formatWhatsAppTime}
-              onTogglePaused={handleTogglePaused} // <-- Add this line
+              onTogglePaused={handleTogglePaused}
             />
+            <div ref={messagesEndRef} />
           </div>
           {/* Message input */}
           {activeChat && (
@@ -734,9 +774,10 @@ function Dashboard({ user, onLogout }) {
                                 min="1"
                                 className="form-control rounded-pill"
                                 style={{ maxWidth: "100px" }}
-                                placeholder="Value"
+                                placeholder="Interval"
                                 value={customIntervalValue}
                                 onChange={(e) => setCustomIntervalValue(e.target.value)}
+                                required
                               />
                               <select
                                 className="form-select rounded-pill"
@@ -748,6 +789,18 @@ function Dashboard({ user, onLogout }) {
                                 <option value="hours">Hours</option>
                                 <option value="days">Days</option>
                               </select>
+                              <span>Repeat</span>
+                              <input
+                                type="number"
+                                min="1"
+                                className="form-control rounded-pill"
+                                style={{ maxWidth: "100px" }}
+                                placeholder="Times"
+                                value={repeatCount}
+                                onChange={(e) => setRepeatCount(e.target.value)}
+                                required
+                              />
+                              <span>times</span>
                             </div>
                           )}
                         </>

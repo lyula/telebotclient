@@ -12,7 +12,6 @@ function ChatMessages({ activeMessages, formatWhatsAppTime, onTogglePaused, acti
   return (
     <div>
       {activeMessages.map((msg, idx) => {
-        // You may need to adjust this logic for sent/received
         const isSent = msg.sent || msg.isSent || msg.user === (activeChat?.user || "me");
         return (
           <div
@@ -53,6 +52,17 @@ function ChatMessages({ activeMessages, formatWhatsAppTime, onTogglePaused, acti
                   </label>
                 )}
               </div>
+              {/* Repeat message info */}
+              {typeof msg.repeatCount === "number" && msg.repeatCount > 1 && (
+                <div
+                  className="bg-light rounded px-2 py-1 mt-1 small text-secondary"
+                  style={{ maxWidth: 320, fontSize: 12 }}
+                >
+                  <span>
+                    <b>Repeat:</b> Sent {msg.sentCount || 0} of {msg.repeatCount} times
+                  </span>
+                </div>
+              )}
               {/* Schedule summary as a reply */}
               {msg.isScheduled && msg.userSchedule && (
                 <div
