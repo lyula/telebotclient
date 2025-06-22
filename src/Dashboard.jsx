@@ -144,7 +144,7 @@ function Dashboard({ user, onLogout }) {
     };
 
     fetchMessages();
-    const fetchInterval = setInterval(fetchMessages, 30000); // <-- renamed from 'interval'
+    const fetchInterval = setInterval(fetchMessages, 5000); // every 5 seconds
     return () => clearInterval(fetchInterval);
   }, [activeChatId]);
 
@@ -290,31 +290,8 @@ function Dashboard({ user, onLogout }) {
       };
 
       if (scheduleType === "interval") {
-        let intervalValue, intervalUnit;
-        if (interval === "custom") {
-          intervalValue = Number(customIntervalValue);
-          intervalUnit = customIntervalUnit;
-        } else {
-          const presetMap = {
-            every_minute: { value: 1, unit: "minutes" },
-            every_3_minutes: { value: 3, unit: "minutes" },
-            every_5_minutes: { value: 5, unit: "minutes" },
-            every_10_minutes: { value: 10, unit: "minutes" },
-            every_15_minutes: { value: 15, unit: "minutes" },
-            every_30_minutes: { value: 30, unit: "minutes" },
-            every_hour: { value: 1, unit: "hours" },
-            every_day: { value: 1, unit: "days" },
-          };
-          const preset = presetMap[interval];
-          if (!preset) {
-            setNotification({ show: true, message: "Please select a valid interval option." });
-            setSending(false);
-            return;
-          }
-          intervalValue = preset.value;
-          intervalUnit = preset.unit;
-        }
-        // Ensure repeatCount is a positive number
+        const intervalValue = Number(customIntervalValue);
+        const intervalUnit = customIntervalUnit;
         const repeat = Number(repeatCount);
         if (!intervalValue || !intervalUnit || !repeat || isNaN(repeat) || repeat <= 0) {
           setNotification({ show: true, message: "Please fill all interval and repeat fields." });
@@ -481,6 +458,25 @@ function Dashboard({ user, onLogout }) {
       }
     } catch (err) {
       alert("Failed to toggle automation");
+    }
+  };
+
+  const handleManualRefresh = async () => {
+    if (!activeChatId) return;
+    const token = localStorage.getItem("token");
+    try {
+      const resMsg = await fetch(`${API_BASE_URL}/messages/group/${activeChatId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (resMsg.ok) {
+        const msgData = await resMsg.json();
+        setMessagesByGroup((prev) => ({
+          ...prev,
+          [activeChatId]: msgData.messages || [],
+        }));
+      }
+    } catch (err) {
+      setNotification({ show: true, message: "Failed to refresh messages." });
     }
   };
 
@@ -740,6 +736,7 @@ function Dashboard({ user, onLogout }) {
               activeMessages={activeMessages}
               formatWhatsAppTime={formatWhatsAppTime}
               onTogglePaused={handleTogglePaused}
+              onManualRefresh={handleManualRefresh}
             />
             <div ref={messagesEndRef} />
           </div>
@@ -792,73 +789,50 @@ function Dashboard({ user, onLogout }) {
                       )}
                       {scheduleType === "interval" && (
                         <>
+                          {/* Remove all preset options, keep only custom */}
                           <select
                             className="form-select rounded-pill"
                             style={{ maxWidth: "200px" }}
-                            value={interval}
-                            onChange={(e) => setInterval(e.target.value)}
+                            value="custom"
+                            disabled
                           >
-                            <option value="every_minute">Every 1 Minute</option>
-                            <option value="every_3_minutes">Every 3 Minutes</option>
-                            <option value="every_5_minutes">Every 5 Minutes</option>
-                            <option value="every_10_minutes">Every 10 Minutes</option>
-                            <option value="every_15_minutes">Every 15 Minutes</option>
-                            <option value="every_30_minutes">Every 30 Minutes</option>
-                            <option value="every_hour">Every Hour</option>
-                            <option value="every_day">Every Day</option>
                             <option value="custom">Custom</option>
                           </select>
-                          {interval === "custom" ? (
-                            <div className="d-flex align-items-center gap-2 mt-1">
-                              <input
-                                type="number"
-                                min="1"
-                                className="form-control rounded-pill"
-                                style={{ maxWidth: "100px" }}
-                                placeholder="Interval"
-                                value={customIntervalValue}
-                                onChange={(e) => setCustomIntervalValue(e.target.value)}
-                                required
-                              />
-                              <select
-                                className="form-select rounded-pill"
-                                style={{ maxWidth: "100px" }}
-                                value={customIntervalUnit}
-                                onChange={(e) => setCustomIntervalUnit(e.target.value)}
-                              >
-                                <option value="minutes">Minutes</option>
-                                <option value="hours">Hours</option>
-                                <option value="days">Days</option>
-                              </select>
-                              <span>Repeat</span>
-                              <input
-                                type="number"
-                                min="1"
-                                className="form-control rounded-pill"
-                                style={{ maxWidth: "100px" }}
-                                placeholder="Times"
-                                value={repeatCount}
-                                onChange={(e) => setRepeatCount(e.target.value)}
-                                required
-                              />
-                              <span>times</span>
-                            </div>
-                          ) : (
-                            <div className="d-flex align-items-center gap-2 mt-1">
-                              <span>Repeat</span>
-                              <input
-                                type="number"
-                                min="1"
-                                className="form-control rounded-pill"
-                                style={{ maxWidth: "100px" }}
-                                placeholder="Times"
-                                value={repeatCount}
-                                onChange={(e) => setRepeatCount(e.target.value)}
-                                required
-                              />
-                              <span>times</span>
-                            </div>
-                          )}
+                          {/* Always show custom interval input fields */}
+                          <div className="d-flex align-items-center gap-2 mt-1">
+                            <input
+                              type="number"
+                              min="1"
+                              className="form-control rounded-pill"
+                              style={{ maxWidth: "100px" }}
+                              placeholder="Interval"
+                              value={customIntervalValue}
+                              onChange={(e) => setCustomIntervalValue(e.target.value)}
+                              required
+                            />
+                            <select
+                              className="form-select rounded-pill"
+                              style={{ maxWidth: "100px" }}
+                              value={customIntervalUnit}
+                              onChange={(e) => setCustomIntervalUnit(e.target.value)}
+                            >
+                              <option value="minutes">Minutes</option>
+                              <option value="hours">Hours</option>
+                              <option value="days">Days</option>
+                            </select>
+                            <span>Repeat</span>
+                            <input
+                              type="number"
+                              min="1"
+                              className="form-control rounded-pill"
+                              style={{ maxWidth: "100px" }}
+                              placeholder="Times"
+                              value={repeatCount}
+                              onChange={(e) => setRepeatCount(e.target.value)}
+                              required
+                            />
+                            <span>times</span>
+                          </div>
                         </>
                       )}
                     </>
