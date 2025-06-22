@@ -10,10 +10,13 @@ function ChatMessages({ activeMessages, formatWhatsAppTime, onTogglePaused, acti
   }
 
   return (
-    <div style={{ marginBottom: 72 }}> {/* Increased margin for input spacing */}
+    <div style={{ marginBottom: 72 }}>
       {activeMessages.map((msg, idx) => {
         const isSent = msg.sent || msg.isSent || msg.user === (activeChat?.user || "me");
         const hasUpdate = !!(msg.scheduleSummary || (typeof msg.repeatCount === "number" && msg.repeatCount > 1));
+        const messagePreview = (msg.text || msg.message || "").slice(0, 20);
+        const messagePreviewEllipsis = (msg.text || msg.message || "").length > 20 ? "..." : "";
+
         return (
           <React.Fragment key={msg._id || idx}>
             {/* Main message bubble */}
@@ -110,6 +113,31 @@ function ChatMessages({ activeMessages, formatWhatsAppTime, onTogglePaused, acti
                     marginBottom: 0,
                   }}
                 >
+                  {/* WhatsApp-style reply tag */}
+                  <div
+                    style={{
+                      fontWeight: 700,
+                      color: "#0d6efd",
+                      fontSize: 13,
+                      marginBottom: 2,
+                      borderLeft: "2px solid #0d6efd",
+                      paddingLeft: 6,
+                    }}
+                  >
+                    You
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 13,
+                      color: "#222",
+                      marginBottom: 6,
+                      paddingLeft: 6,
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    {(msg.text || msg.message || "").slice(0, 40)}
+                    {((msg.text || msg.message || "").length > 40) && "..."}
+                  </div>
                   {msg.scheduleSummary && (
                     <div>
                       <b>Update:</b> {msg.scheduleSummary}
@@ -142,7 +170,7 @@ function ChatMessages({ activeMessages, formatWhatsAppTime, onTogglePaused, acti
                   display: "flex",
                   justifyContent: isSent ? "flex-end" : "flex-start",
                   marginTop: 2,
-                  marginBottom: 16, // extra space before input
+                  marginBottom: 16,
                 }}
               >
                 <button

@@ -26,16 +26,15 @@ const formatWhatsAppDate = (date) => {
   const isToday = date.toDateString() === today.toDateString();
   const isYesterday = date.toDateString() === yesterday.toDateString();
 
-  if (isToday) {
-    // Show time in hh:mm AM/PM
+  // Always show time for today and yesterday
+  if (isToday || isYesterday) {
     const hours = date.getHours();
     const minutes = date.getMinutes();
     const ampm = hours >= 12 ? "PM" : "AM";
     const formattedHours = hours % 12 || 12;
     return `${formattedHours}:${minutes.toString().padStart(2, "0")} ${ampm}`;
   }
-  if (isYesterday) return "Yesterday";
-  // Show date in dd/mm/yy
+  // Show date in dd/mm/yy for older messages
   return `${date.getDate().toString().padStart(2, "0")}/${(date.getMonth() + 1)
     .toString()
     .padStart(2, "0")}/${date.getFullYear().toString().slice(-2)}`;
@@ -525,6 +524,13 @@ function Dashboard({ user, onLogout }) {
     return true;
   };
 
+  // Before rendering <ChatList ... />
+  const sortedChats = [...chats].sort((a, b) => {
+    const aTime = a.latestMessage?.time ? new Date(a.latestMessage.time) : new Date(0);
+    const bTime = b.latestMessage?.time ? new Date(b.latestMessage.time) : new Date(0);
+    return bTime - aTime;
+  });
+
   return (
     <>
       <div
@@ -655,7 +661,7 @@ function Dashboard({ user, onLogout }) {
         </style>
         {/* Sidebar (Chat List) */}
         <ChatList
-          chats={chats}
+          chats={sortedChats}
           activeChatId={activeChatId}
           handleSelectChat={handleSelectChat}
           formatWhatsAppDate={formatWhatsAppDate}
@@ -706,8 +712,8 @@ function Dashboard({ user, onLogout }) {
                   </div>
                   <div>
                     <div className="fw-semibold">{activeChat.name}</div>
-                    <div className="small text-secondary">
-                      {activeChat.time ? formatWhatsAppDate(new Date(activeChat.time)) : ""}
+                    <div className="small text-success">
+                      online
                     </div>
                   </div>
                 </div>
