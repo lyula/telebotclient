@@ -195,7 +195,7 @@ function ChatMessages({ activeMessages, formatWhatsAppTime, onTogglePaused, acti
               </div>
             )}
             {/* Refresh button below the latest reply */}
-            {idx === activeMessages.length - 1 && hasUpdate && (
+            {idx === activeMessages.length - 1 && (
               <div
                 style={{
                   width: "100%",
