@@ -752,11 +752,11 @@ function Dashboard({ user, onLogout }) {
             }}
           >
             <ChatMessages
-              activeChat={activeChat}
               activeMessages={activeMessages}
               formatWhatsAppTime={formatWhatsAppTime}
               onTogglePaused={handleTogglePaused}
               onManualRefresh={handleManualRefresh}
+              bottomControlsHeight={isSchedulerOpen ? 180 : 72} // adjust these heights to match your UI
             />
             <div ref={messagesEndRef} />
           </div>

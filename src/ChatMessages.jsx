@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from "react";
-
+ld 
 function formatDateLabel(date) {
   const now = new Date();
   const msgDate = new Date(date);
@@ -46,16 +46,25 @@ function groupMessagesByDate(messages) {
   return groups;
 }
 
-function ChatMessages({ activeMessages, formatWhatsAppTime, onTogglePaused, activeChat, onManualRefresh }) {
+function ChatMessages({
+  activeMessages,
+  formatWhatsAppTime,
+  onTogglePaused,
+  activeChat,
+  onManualRefresh,
+  bottomControlsHeight = 72,
+}) {
   const chatContainerRef = useRef(null);
   const [refreshing, setRefreshing] = useState(false);
   const refreshTimeout = useRef();
   const [stickyDate, setStickyDate] = useState("");
+  const [showSticky, setShowSticky] = useState(false);
+  const lastScrollTop = useRef(0);
 
   // Group messages by date
   const groupedMessages = groupMessagesByDate(activeMessages);
 
-  // Sticky date label logic
+  // Sticky date label logic (only show on scroll up, hide on scroll down)
   useEffect(() => {
     const chatDiv = chatContainerRef.current;
     if (!chatDiv) return;
@@ -72,6 +81,18 @@ function ChatMessages({ activeMessages, formatWhatsAppTime, onTogglePaused, acti
         }
       }
       setStickyDate(found);
+
+      // Detect scroll direction
+      const st = chatDiv.scrollTop;
+      if (st < lastScrollTop.current) {
+        // Scrolling up
+        setShowSticky(true);
+      } else {
+        // Scrolling down
+        setShowSticky(false);
+      }
+      lastScrollTop.current = st <= 0 ? 0 : st;
+
       // Trigger refresh if scrolled to bottom
       if (chatDiv.scrollHeight - chatDiv.scrollTop - chatDiv.clientHeight < 20) {
         onManualRefresh();
@@ -92,34 +113,39 @@ function ChatMessages({ activeMessages, formatWhatsAppTime, onTogglePaused, acti
     );
   }
 
+  // Find the last message's alignment for refresh button placement
+  const lastMsg = activeMessages[activeMessages.length - 1];
+  const isLastSent = lastMsg && (lastMsg.sent || lastMsg.isSent || lastMsg.user === (activeChat?.user || "me"));
+
   return (
     <div
       ref={chatContainerRef}
       style={{
-        marginBottom: 72,
+        marginBottom: 0,
         overflowY: "auto",
         height: "100%",
         scrollbarWidth: "none",
         msOverflowStyle: "none",
-        paddingBottom: 120,
+        paddingBottom: bottomControlsHeight + 8, // minimal padding
         position: "relative",
       }}
       className="hide-scrollbar"
     >
-      {/* Sticky date label */}
-      {stickyDate && (
+      {/* Sticky date label: no background, only visible when scrolling up */}
+      {stickyDate && showSticky && (
         <div
           style={{
             position: "sticky",
             top: 0,
             zIndex: 10,
-            background: "rgba(255,255,255,0.95)",
             textAlign: "center",
             padding: "4px 0 2px 0",
             fontWeight: 500,
             fontSize: 13,
             color: "#444",
             borderBottom: "1px solid #eee",
+            background: "none", // No background
+            transition: "opacity 0.2s",
           }}
         >
           {stickyDate}
@@ -341,15 +367,15 @@ function ChatMessages({ activeMessages, formatWhatsAppTime, onTogglePaused, acti
                 </div>
               </div>
             )}
-            {/* Refresh button below the latest reply */}
-            {idx === activeMessages.length - 1 && (
+            {/* Only render the refresh button after the last message */}
+            {idx === groupedMessages.length - 1 && (
               <div
                 style={{
                   width: "100%",
                   display: "flex",
                   justifyContent: isSent ? "flex-end" : "flex-start",
                   marginTop: 2,
-                  marginBottom: 4,
+                  marginBottom: 0, // minimal gap
                 }}
               >
                 <button
@@ -357,8 +383,8 @@ function ChatMessages({ activeMessages, formatWhatsAppTime, onTogglePaused, acti
                   title="Refresh"
                   style={{
                     borderRadius: "50%",
-                    width: 24,
-                    height: 24,
+                    width: 28,
+                    height: 28,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
@@ -379,14 +405,13 @@ function ChatMessages({ activeMessages, formatWhatsAppTime, onTogglePaused, acti
                   }}
                 >
                   <svg
-                    key={refreshing ? "spin" : "static"} // Force re-render on state change
+                    key={refreshing ? "spin" : "static"}
                     width="16"
                     height="16"
                     fill="currentColor"
                     viewBox="0 0 24 24"
                     style={{
                       animation: refreshing ? "spin-refresh 0.35s linear" : "none",
-                      // Remove transition/transform here
                     }}
                   >
                     <path d="M17.65 6.35A7.95 7.95 0 0 0 12 4V1L7 6l5 5V7c1.93 0 3.68.78 4.95 2.05A7 7 0 1 1 5 12H3a9 9 0 1 0 14.65-5.65z"/>
