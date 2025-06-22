@@ -125,25 +125,46 @@ function ChatMessages({ activeMessages, formatWhatsAppTime, onTogglePaused, acti
                     {(msg.text || msg.message || "").slice(0, 40)}
                     {((msg.text || msg.message || "").length > 40) && "..."}
                   </div>
-                  {msg.scheduleSummary && (
+                  {/* Human-like schedule summary for all messages */}
+                  <div style={{ color: "#444", fontSize: 13, marginBottom: 4, paddingLeft: 6 }}>
                     <div>
-                      <b>Update:</b> {msg.scheduleSummary}
+                      <b>Interval:</b> {msg.customIntervalValue || "null"} {msg.customIntervalUnit || "null"}
                     </div>
-                  )}
+                    <div>
+                      <b>Repeat count:</b> {typeof msg.repeatCount === "number" ? msg.repeatCount : "null"}
+                    </div>
+                    <div>
+                      <b>Sent count:</b> {typeof msg.sentCount === "number" ? msg.sentCount : "null"}
+                    </div>
+                    {msg.scheduleType === "interval" && (
+                      <>
+                        This message will repeat every <b>{msg.customIntervalValue || "null"} {msg.customIntervalUnit || "null"}</b>.<br />
+                        <b>Schedule type:</b> Recurring.<br />
+                      </>
+                    )}
+                    {msg.scheduleType === "datetime" && (
+                      <>
+                        This message is scheduled for <b>{msg.scheduleDateTime ? new Date(msg.scheduleDateTime).toLocaleString() : "null"}</b>.<br />
+                        <b>Schedule type:</b> Specific Time.<br />
+                      </>
+                    )}
+                    {msg.scheduleType === "now" && (
+                      <>
+                        This message will be sent immediately.<br />
+                        <b>Schedule type:</b> Send Now.<br />
+                      </>
+                    )}
+                    {!msg.scheduleType && (
+                      <>
+                        <b>Schedule type:</b> null<br />
+                      </>
+                    )}
+                    <span style={{ color: "#0d6efd" }}>Tip: Refresh to see updated sent counts below.</span>
+                  </div>
+                  {/* Repeat count always at the bottom if present */}
                   {typeof msg.repeatCount === "number" && msg.repeatCount > 1 && (
-                    <div>
-                      <b>Repeat:</b> Sent {msg.sentCount || 0} of {msg.repeatCount} times
-                    </div>
-                  )}
-                  {msg.scheduleType && (
-                    <div className="small text-secondary mt-1">
-                      <b>Schedule Type:</b> {msg.scheduleType === "now"
-                        ? "Send Now"
-                        : msg.scheduleType === "datetime"
-                          ? "Specific Time"
-                          : msg.scheduleType === "interval"
-                            ? "Recurring"
-                            : msg.scheduleType}
+                    <div style={{ marginTop: 6, paddingLeft: 6 }}>
+                      <b>Repeat count:</b> Sent {msg.sentCount || 0} of {msg.repeatCount} times
                     </div>
                   )}
                 </div>
