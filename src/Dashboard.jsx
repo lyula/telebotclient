@@ -93,6 +93,7 @@ function Dashboard({ user, onLogout }) {
   const [showSchedulePopover, setShowSchedulePopover] = useState(false);
   const [isMessageInputFocused, setIsMessageInputFocused] = useState(false);
   const [repeatCount, setRepeatCount] = useState(1);
+  const [sending, setSending] = useState(false);
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
@@ -261,8 +262,26 @@ function Dashboard({ user, onLogout }) {
 
   const handleSend = async (e) => {
     e.preventDefault();
+    if (sending) return; // Prevent double submit
     if (!message.trim() || !activeChatId) return;
+    // Prevent sending if scheduleType is not selected
+    if (!scheduleType) {
+      setNotification({ show: true, message: "Please select a schedule type." });
+      return;
+    }
+    // For recurring, prevent sending if any required field is missing
+    if (
+      scheduleType === "interval" &&
+      (
+        (interval === "custom" && (!customIntervalValue || !customIntervalUnit || !repeatCount)) ||
+        (interval !== "custom" && !repeatCount)
+      )
+    ) {
+      setNotification({ show: true, message: "Please fill all interval and repeat fields." });
+      return;
+    }
     setMessage("");
+    setSending(true); // Start loading
 
     try {
       const token = localStorage.getItem("token");
@@ -364,6 +383,8 @@ function Dashboard({ user, onLogout }) {
       console.error("Failed to send message:", err);
       const errorMessage = err.message || "Failed to send message. Please try again.";
       setNotification({ show: true, message: errorMessage });
+    } finally {
+      setSending(false); // Always reset loading state
     }
   };
 
@@ -857,7 +878,7 @@ function Dashboard({ user, onLogout }) {
                     justifyContent: "center",
                     marginLeft: "8px",
                   }}
-                  disabled={isSendDisabled()}
+                  disabled={isSendDisabled() || sending}
                 >
                   <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
