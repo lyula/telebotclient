@@ -32,7 +32,20 @@ function ChatMessages({ activeMessages, formatWhatsAppTime, onTogglePaused, acti
                   wordBreak: "break-word",
                 }}
               >
-                <div className="d-flex align-items-center">
+                <div className="d-flex align-items-center mb-1">
+                  {isSent && (
+                    <span
+                      style={{
+                        color: "#0d6efd",
+                        fontWeight: 500,
+                        fontSize: 12,
+                        marginRight: 6,
+                        marginLeft: 2,
+                      }}
+                    >
+                      You
+                    </span>
+                  )}
                   <span className="flex-grow-1">{msg.text || msg.message}</span>
                   {/* Ticks */}
                   {msg.scheduleType === "interval" && (
