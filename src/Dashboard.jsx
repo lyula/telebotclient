@@ -19,6 +19,9 @@ function getGreeting() {
 
 // Helper to format dates like WhatsApp
 const formatWhatsAppDate = (date) => {
+  // Ensure date is a Date object
+  if (!(date instanceof Date)) date = new Date(date);
+
   const today = new Date();
   const yesterday = new Date(today);
   yesterday.setDate(today.getDate() - 1);
@@ -26,13 +29,17 @@ const formatWhatsAppDate = (date) => {
   const isToday = date.toDateString() === today.toDateString();
   const isYesterday = date.toDateString() === yesterday.toDateString();
 
-  // Always show time for today and yesterday
-  if (isToday || isYesterday) {
+  if (isToday) {
+    // Show time for today
     const hours = date.getHours();
     const minutes = date.getMinutes();
     const ampm = hours >= 12 ? "PM" : "AM";
     const formattedHours = hours % 12 || 12;
     return `${formattedHours}:${minutes.toString().padStart(2, "0")} ${ampm}`;
+  }
+  if (isYesterday) {
+    // Show "Yesterday" for yesterday
+    return "Yesterday";
   }
   // Show date in dd/mm/yy for older messages
   return `${date.getDate().toString().padStart(2, "0")}/${(date.getMonth() + 1)
@@ -156,14 +163,16 @@ function Dashboard({ user, onLogout }) {
       if (!res.ok) throw new Error("Failed to fetch groups");
       const data = await res.json();
       const chatList = (Array.isArray(data) ? data : [])
-        .sort((a, b) =>
-          new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+        .sort(
+          (a, b) =>
+            new Date(b.lastMessageTime || 0).getTime() -
+            new Date(a.lastMessageTime || 0).getTime()
         )
         .map((g) => ({
           id: g.groupId,
           name: g.displayName,
           lastMessage: "",
-          time: g.createdAt || "",
+          time: g.lastMessageTime || g.createdAt || "",
           messages: [],
         }));
       setChats(chatList);

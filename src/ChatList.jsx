@@ -78,6 +78,9 @@ function ChatList({
               <h2>How to use this platform</h2>
               <ol>
                 <li>
+                  Read All the steps below first then proceed to click the link.
+                </li>
+                <li>
                   Click <a href="https://t.me/ShunMeiBot" target="_blank" rel="noopener noreferrer">this link</a> to open the Telegram bot.
                 </li>
                 <li>
