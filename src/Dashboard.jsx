@@ -74,7 +74,7 @@ function Dashboard({ user, onLogout }) {
   const [activeChatId, setActiveChatId] = useState(null);
   const [message, setMessage] = useState("");
   const [mobileView, setMobileView] = useState("list");
-  const [scheduleType, setScheduleType] = useState("now");
+  const [scheduleType, setScheduleType] = useState(""); // was "now"
   const [scheduleDateTime, setScheduleDateTime] = useState("");
   const [interval, setInterval] = useState("every_minute");
   const [showGroupModal, setShowGroupModal] = useState(false);
@@ -143,8 +143,8 @@ function Dashboard({ user, onLogout }) {
     };
 
     fetchMessages();
-    const interval = setInterval(fetchMessages, 30000); // every 30 seconds
-    return () => clearInterval(interval);
+    const fetchInterval = setInterval(fetchMessages, 30000); // <-- renamed from 'interval'
+    return () => clearInterval(fetchInterval);
   }, [activeChatId]);
 
   const fetchGroups = async () => {
@@ -353,6 +353,12 @@ function Dashboard({ user, onLogout }) {
           ...prev,
           [activeChatId]: updatedMessages,
         }));
+        setCustomIntervalValue("");
+        setCustomIntervalUnit("minutes");
+        setRepeatCount(1);
+        setScheduleDateTime("");
+        setInterval("every_minute");
+        setScheduleType("now");
       }
     } catch (err) {
       console.error("Failed to send message:", err);
@@ -470,6 +476,7 @@ function Dashboard({ user, onLogout }) {
 
   const isSendDisabled = () => {
     if (!message.trim()) return true;
+    if (!scheduleType) return true; // Disable if no schedule selected
     if (scheduleType === "now") return false;
     if (scheduleType === "datetime") return !scheduleDateTime;
     if (scheduleType === "interval") {
@@ -738,6 +745,7 @@ function Dashboard({ user, onLogout }) {
                         value={scheduleType}
                         onChange={(e) => setScheduleType(e.target.value)}
                       >
+                        <option value="" disabled>Choose schedule</option>
                         <option value="now">Send Now</option>
                         <option value="datetime">Specific Time</option>
                         <option value="interval">Recurring</option>
