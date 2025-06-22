@@ -43,40 +43,44 @@ function ChatMessages({ activeMessages, formatWhatsAppTime, onTogglePaused, acti
               >
                 <div className="d-flex align-items-center mb-1">
                   <span className="flex-grow-1">{msg.text || msg.message}</span>
-                  {/* Ticks */}
-                  {msg.scheduleType === "interval" && (
-                    <span style={{ marginLeft: 8, display: "flex", alignItems: "center" }}>
-                      {/* Grey double tick */}
-                      {(!msg.sentCount || msg.sentCount === 0) && (
+                  {/* Always show ticks for all message types */}
+                  <span style={{ marginLeft: 8, display: "flex", alignItems: "center" }}>
+                    {/* Grey double tick for unsent */}
+                    {(
+                      (!msg.sentCount || msg.sentCount === 0) ||
+                      (msg.scheduleType === "datetime" && !msg.isSent)
+                    ) && (
+                      <svg width="18" height="18" style={{ marginLeft: 2 }} viewBox="0 0 24 24">
+                        <path fill="#bbb" d="M1.73,12.91 1.73,12.91 8.1,19.28 22.79,4.59 21.37,3.17 8.1,16.44 3.14,11.48z"/>
+                        <path fill="#bbb" d="M5.73,12.91 5.73,12.91 12.1,19.28 23.79,7.59 22.37,6.17 12.1,16.44 7.14,11.48z"/>
+                      </svg>
+                    )}
+                    {/* One blue, one grey tick for partial sent (mainly for interval/recurring) */}
+                    {msg.sentCount > 0 && msg.sentCount < (msg.repeatCount ?? 1) && msg.scheduleType !== "datetime" && (
+                      <>
                         <svg width="18" height="18" style={{ marginLeft: 2 }} viewBox="0 0 24 24">
-                          <path fill="#bbb" d="M1.73,12.91 1.73,12.91 8.1,19.28 22.79,4.59 21.37,3.17 8.1,16.44 3.14,11.48z"/>
+                          <path fill="#0d6efd" d="M1.73,12.91 1.73,12.91 8.1,19.28 22.79,4.59 21.37,3.17 8.1,16.44 3.14,11.48z"/>
+                        </svg>
+                        <svg width="18" height="18" style={{ marginLeft: -8 }} viewBox="0 0 24 24">
                           <path fill="#bbb" d="M5.73,12.91 5.73,12.91 12.1,19.28 23.79,7.59 22.37,6.17 12.1,16.44 7.14,11.48z"/>
                         </svg>
-                      )}
-                      {/* One blue, one grey tick */}
-                      {msg.sentCount > 0 && msg.sentCount < msg.repeatCount && (
-                        <>
-                          <svg width="18" height="18" style={{ marginLeft: 2 }} viewBox="0 0 24 24">
-                            <path fill="#0d6efd" d="M1.73,12.91 1.73,12.91 8.1,19.28 22.79,4.59 21.37,3.17 8.1,16.44 3.14,11.48z"/>
-                          </svg>
-                          <svg width="18" height="18" style={{ marginLeft: -8 }} viewBox="0 0 24 24">
-                            <path fill="#bbb" d="M5.73,12.91 5.73,12.91 12.1,19.28 23.79,7.59 22.37,6.17 12.1,16.44 7.14,11.48z"/>
-                          </svg>
-                        </>
-                      )}
-                      {/* Double blue tick */}
-                      {msg.sentCount >= msg.repeatCount && (
-                        <>
-                          <svg width="18" height="18" style={{ marginLeft: 2 }} viewBox="0 0 24 24">
-                            <path fill="#0d6efd" d="M1.73,12.91 1.73,12.91 8.1,19.28 22.79,4.59 21.37,3.17 8.1,16.44 3.14,11.48z"/>
-                          </svg>
-                          <svg width="18" height="18" style={{ marginLeft: -8 }} viewBox="0 0 24 24">
-                            <path fill="#0d6efd" d="M5.73,12.91 5.73,12.91 12.1,19.28 23.79,7.59 22.37,6.17 12.1,16.44 7.14,11.48z"/>
-                          </svg>
-                        </>
-                      )}
-                    </span>
-                  )}
+                      </>
+                    )}
+                    {/* Double blue tick for sent */}
+                    {(
+                      (msg.sentCount >= (msg.repeatCount ?? 1) && msg.scheduleType !== "datetime") ||
+                      (msg.scheduleType === "datetime" && msg.isSent)
+                    ) && (
+                      <>
+                        <svg width="18" height="18" style={{ marginLeft: 2 }} viewBox="0 0 24 24">
+                          <path fill="#0d6efd" d="M1.73,12.91 1.73,12.91 8.1,19.28 22.79,4.59 21.37,3.17 8.1,16.44 3.14,11.48z"/>
+                        </svg>
+                        <svg width="18" height="18" style={{ marginLeft: -8 }} viewBox="0 0 24 24">
+                          <path fill="#0d6efd" d="M5.73,12.91 5.73,12.91 12.1,19.28 23.79,7.59 22.37,6.17 12.1,16.44 7.14,11.48z"/>
+                        </svg>
+                      </>
+                    )}
+                  </span>
                 </div>
                 <div
                   className="text-end text-secondary small mt-1"
@@ -159,8 +163,8 @@ function ChatMessages({ activeMessages, formatWhatsAppTime, onTogglePaused, acti
                       <>
                         This message is scheduled for{" "}
                         <b>
-                          {msg.scheduleDateTime
-                            ? new Date(msg.scheduleDateTime).toLocaleString()
+                          {msg.scheduleTime
+                            ? new Date(msg.scheduleTime).toLocaleString()
                             : "null"}
                         </b>
                         .<br />
