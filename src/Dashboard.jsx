@@ -76,7 +76,7 @@ function Dashboard({ user, onLogout }) {
   const [mobileView, setMobileView] = useState("list");
   const [scheduleType, setScheduleType] = useState(""); // was "now"
   const [scheduleDateTime, setScheduleDateTime] = useState("");
-  const [interval, setInterval] = useState("every_minute");
+  const [interval, setInterval] = useState("every_minute"); // default to a valid preset
   const [showGroupModal, setShowGroupModal] = useState(false);
   const [newGroupName, setNewGroupName] = useState("");
   const [newGroupId, setNewGroupId] = useState("");
