@@ -251,16 +251,14 @@ function ChatMessages({ activeMessages, formatWhatsAppTime, onTogglePaused, acti
                     transition: "background 0.2s",
                     cursor: "pointer",
                   }}
-                  // Remove any disabled prop, always allow click
                   onClick={() => {
-                    // Immediately allow another click by resetting refreshing
-                    setRefreshing(false);
+                    setRefreshing(false); // Reset state to allow re-trigger
                     setTimeout(() => {
                       setRefreshing(true);
                       if (refreshTimeout.current) clearTimeout(refreshTimeout.current);
-                      refreshTimeout.current = setTimeout(() => setRefreshing(false), 700);
+                      refreshTimeout.current = setTimeout(() => setRefreshing(false), 350); // Faster spin
                       onManualRefresh();
-                    }, 0);
+                    }, 10); // Small delay to force state change
                   }}
                 >
                   <svg
@@ -269,7 +267,7 @@ function ChatMessages({ activeMessages, formatWhatsAppTime, onTogglePaused, acti
                     fill="currentColor"
                     viewBox="0 0 24 24"
                     style={{
-                      transition: "transform 0.5s",
+                      transition: "transform 0.2s",
                       transform: refreshing ? "rotate(360deg)" : "none",
                     }}
                   >
@@ -279,7 +277,7 @@ function ChatMessages({ activeMessages, formatWhatsAppTime, onTogglePaused, acti
                 <style>
                   {`
                     .refresh-anim svg {
-                      animation: spin-refresh 0.7s linear;
+                      animation: spin-refresh 0.35s linear;
                     }
                     @keyframes spin-refresh {
                       100% { transform: rotate(360deg);}
