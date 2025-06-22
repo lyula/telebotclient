@@ -1,6 +1,10 @@
-import React from "react";
+import React, { useRef, useState } from "react";
 
 function ChatMessages({ activeMessages, formatWhatsAppTime, onTogglePaused, activeChat, onManualRefresh }) {
+  // Add state for animation
+  const [refreshing, setRefreshing] = useState(false);
+  const refreshTimeout = useRef();
+
   if (activeMessages.length === 0) {
     return (
       <div className="text-center text-muted my-auto">
@@ -200,7 +204,7 @@ function ChatMessages({ activeMessages, formatWhatsAppTime, onTogglePaused, acti
                 }}
               >
                 <button
-                  className="border-0 bg-transparent p-0"
+                  className={`border-0 bg-transparent p-0${refreshing ? " refresh-anim" : ""}`}
                   title="Refresh"
                   style={{
                     borderRadius: "50%",
@@ -215,12 +219,37 @@ function ChatMessages({ activeMessages, formatWhatsAppTime, onTogglePaused, acti
                     transition: "background 0.2s",
                     cursor: "pointer",
                   }}
-                  onClick={onManualRefresh}
+                  onClick={() => {
+                    setRefreshing(true);
+                    if (refreshTimeout.current) clearTimeout(refreshTimeout.current);
+                    refreshTimeout.current = setTimeout(() => setRefreshing(false), 700);
+                    onManualRefresh();
+                  }}
                 >
-                  <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                  <svg
+                    width="16"
+                    height="16"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                    style={{
+                      transition: "transform 0.5s",
+                      transform: refreshing ? "rotate(360deg)" : "none",
+                    }}
+                  >
                     <path d="M17.65 6.35A7.95 7.95 0 0 0 12 4V1L7 6l5 5V7c1.93 0 3.68.78 4.95 2.05A7 7 0 1 1 5 12H3a9 9 0 1 0 14.65-5.65z"/>
                   </svg>
                 </button>
+                {/* Add animation CSS */}
+                <style>
+                  {`
+                    .refresh-anim svg {
+                      animation: spin-refresh 0.7s linear;
+                    }
+                    @keyframes spin-refresh {
+                      100% { transform: rotate(360deg);}
+                    }
+                  `}
+                </style>
               </div>
             )}
           </React.Fragment>
