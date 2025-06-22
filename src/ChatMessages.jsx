@@ -126,47 +126,60 @@ function ChatMessages({ activeMessages, formatWhatsAppTime, onTogglePaused, acti
                     {((msg.text || msg.message || "").length > 40) && "..."}
                   </div>
                   {/* Human-like schedule summary for all messages */}
-                  <div style={{ color: "#444", fontSize: 13, marginBottom: 4, paddingLeft: 6 }}>
-                    <div>
-                      <b>Interval:</b> {msg.customIntervalValue || "null"} {msg.customIntervalUnit || "null"}
-                    </div>
-                    <div>
-                      <b>Repeat count:</b> {typeof msg.repeatCount === "number" ? msg.repeatCount : "null"}
-                    </div>
-                    <div>
-                      <b>Sent count:</b> {typeof msg.sentCount === "number" ? msg.sentCount : "null"}
-                    </div>
+                  <div style={{ color: "#444", fontSize: 13, marginBottom: 0, paddingLeft: 6 }}>
                     {msg.scheduleType === "interval" && (
                       <>
-                        This message will repeat every <b>{msg.customIntervalValue || "null"} {msg.customIntervalUnit || "null"}</b>.<br />
+                        This message will repeat every{" "}
+                        <b>
+                          {(msg.customIntervalValue !== undefined && msg.customIntervalValue !== null && msg.customIntervalValue !== "")
+                            ? msg.customIntervalValue
+                            : "null"}{" "}
+                          {(msg.customIntervalUnit !== undefined && msg.customIntervalUnit !== null && msg.customIntervalUnit !== "")
+                            ? msg.customIntervalUnit
+                            : "null"}
+                        </b>
+                        . It will be sent <b>{typeof msg.repeatCount === "number" ? msg.repeatCount : "null"}</b> times.
+                        <br />
+                        Already sent: <b>{typeof msg.sentCount === "number" ? msg.sentCount : "null"}</b> times.<br />
                         <b>Schedule type:</b> Recurring.<br />
                       </>
                     )}
                     {msg.scheduleType === "datetime" && (
                       <>
-                        This message is scheduled for <b>{msg.scheduleDateTime ? new Date(msg.scheduleDateTime).toLocaleString() : "null"}</b>.<br />
+                        This message is scheduled for{" "}
+                        <b>
+                          {msg.scheduleDateTime
+                            ? new Date(msg.scheduleDateTime).toLocaleString()
+                            : "null"}
+                        </b>
+                        .<br />
                         <b>Schedule type:</b> Specific Time.<br />
+                        Repeat count: <b>{typeof msg.repeatCount === "number" ? msg.repeatCount : "null"}</b>.<br />
+                        Already sent: <b>{typeof msg.sentCount === "number" ? msg.sentCount : "null"}</b> times.<br />
                       </>
                     )}
                     {msg.scheduleType === "now" && (
                       <>
                         This message will be sent immediately.<br />
                         <b>Schedule type:</b> Send Now.<br />
+                        Repeat count: <b>{typeof msg.repeatCount === "number" ? msg.repeatCount : "null"}</b>.<br />
+                        Already sent: <b>{typeof msg.sentCount === "number" ? msg.sentCount : "null"}</b> times.<br />
                       </>
                     )}
                     {!msg.scheduleType && (
                       <>
                         <b>Schedule type:</b> null<br />
+                        Repeat count: <b>{typeof msg.repeatCount === "number" ? msg.repeatCount : "null"}</b>.<br />
+                        Already sent: <b>{typeof msg.sentCount === "number" ? msg.sentCount : "null"}</b> times.<br />
                       </>
                     )}
-                    <span style={{ color: "#0d6efd" }}>Tip: Refresh to see updated sent counts below.</span>
-                  </div>
-                  {/* Repeat count always at the bottom if present */}
-                  {typeof msg.repeatCount === "number" && msg.repeatCount > 1 && (
-                    <div style={{ marginTop: 6, paddingLeft: 6 }}>
-                      <b>Repeat count:</b> Sent {msg.sentCount || 0} of {msg.repeatCount} times
+                    {/* Tip at the end */}
+                    <div style={{ marginTop: 6 }}>
+                      <span style={{ color: "#0d6efd" }}>
+                        Tip: Refresh to see updated sent counts below.
+                      </span>
                     </div>
-                  )}
+                  </div>
                 </div>
               </div>
             )}
