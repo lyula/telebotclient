@@ -359,12 +359,14 @@ function Dashboard({ user, onLogout }) {
           ...prev,
           [activeChatId]: updatedMessages,
         }));
+        // After a successful send (after updating messages)
+        setMessage("");
+        setScheduleType(""); // Hide schedule UI
         setCustomIntervalValue("");
         setCustomIntervalUnit("minutes");
-        setRepeatCount(1);
+        setRepeatCount("");
         setScheduleDateTime("");
-        setInterval("every_minute");
-        setScheduleType("now");
+        // ...reset any other related state...
       }
     } catch (err) {
       console.error("Failed to send message:", err);
@@ -754,7 +756,7 @@ function Dashboard({ user, onLogout }) {
               }}
               onSubmit={handleSend}
             >
-              {(isMessageInputFocused || message.length > 0) && (
+              {(message.trim() || scheduleType) && (
                 <div className={`schedule-controls ${!isSchedulerOpen ? 'collapsed' : ''}`}>
                   <button
                     type="button"
