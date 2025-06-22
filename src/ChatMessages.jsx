@@ -17,7 +17,9 @@ function ChatMessages({ activeMessages, formatWhatsAppTime, onTogglePaused, acti
     <div style={{ marginBottom: 72 }}>
       {activeMessages.map((msg, idx) => {
         const isSent = msg.sent || msg.isSent || msg.user === (activeChat?.user || "me");
-        const hasUpdate = !!(msg.scheduleSummary || (typeof msg.repeatCount === "number" && msg.repeatCount > 1));
+        const hasUpdate =
+          msg.scheduleType !== "now" &&
+          (msg.scheduleSummary || (typeof msg.repeatCount === "number" && msg.repeatCount > 1));
         const messagePreview = (msg.text || msg.message || "").slice(0, 20);
         const messagePreviewEllipsis = (msg.text || msg.message || "").length > 20 ? "..." : "";
 
