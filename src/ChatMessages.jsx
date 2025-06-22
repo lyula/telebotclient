@@ -1,25 +1,88 @@
 import React, { useRef, useState, useEffect } from "react";
 
+function formatDateLabel(date) {
+  const now = new Date();
+  const msgDate = new Date(date);
+  const diff = Math.floor((now - msgDate) / (1000 * 60 * 60 * 24));
+  if (
+    now.getFullYear() === msgDate.getFullYear() &&
+    now.getMonth() === msgDate.getMonth() &&
+    now.getDate() === msgDate.getDate()
+  ) {
+    return "Today";
+  }
+  if (
+    diff === 1 &&
+    now.getDate() - msgDate.getDate() === 1 &&
+    now.getMonth() === msgDate.getMonth() &&
+    now.getFullYear() === msgDate.getFullYear()
+  ) {
+    return "Yesterday";
+  }
+  return msgDate.toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function groupMessagesByDate(messages) {
+  const groups = [];
+  let lastDate = null;
+  messages.forEach((msg, idx) => {
+    const date = new Date(msg.time || msg.createdAt);
+    const dateKey = date.toISOString().slice(0, 10);
+    if (dateKey !== lastDate) {
+      groups.push({
+        type: "separator",
+        date: date,
+        label: formatDateLabel(date),
+        key: `sep-${dateKey}-${idx}`,
+      });
+      lastDate = dateKey;
+    }
+    groups.push({ ...msg, type: "message", key: msg._id || idx });
+  });
+  return groups;
+}
+
 function ChatMessages({ activeMessages, formatWhatsAppTime, onTogglePaused, activeChat, onManualRefresh }) {
   const chatContainerRef = useRef(null);
   const [refreshing, setRefreshing] = useState(false);
   const refreshTimeout = useRef();
+  const [stickyDate, setStickyDate] = useState("");
 
-  // Add scroll event to trigger refresh when scrolled to bottom
+  // Group messages by date
+  const groupedMessages = groupMessagesByDate(activeMessages);
+
+  // Sticky date label logic
   useEffect(() => {
     const chatDiv = chatContainerRef.current;
     if (!chatDiv) return;
 
     const handleScroll = () => {
-      // Allow a small threshold (e.g., 20px) for "near bottom"
+      // Find the first visible message separator
+      const separators = Array.from(chatDiv.querySelectorAll(".date-separator"));
+      let found = "";
+      for (let i = separators.length - 1; i >= 0; i--) {
+        const rect = separators[i].getBoundingClientRect();
+        if (rect.top < chatDiv.getBoundingClientRect().top + 60) {
+          found = separators[i].dataset.label;
+          break;
+        }
+      }
+      setStickyDate(found);
+      // Trigger refresh if scrolled to bottom
       if (chatDiv.scrollHeight - chatDiv.scrollTop - chatDiv.clientHeight < 20) {
         onManualRefresh();
       }
     };
 
     chatDiv.addEventListener("scroll", handleScroll);
+    // Initial call
+    handleScroll();
     return () => chatDiv.removeEventListener("scroll", handleScroll);
-  }, [onManualRefresh]);
+  }, [onManualRefresh, groupedMessages]);
 
   if (activeMessages.length === 0) {
     return (
@@ -36,12 +99,66 @@ function ChatMessages({ activeMessages, formatWhatsAppTime, onTogglePaused, acti
         marginBottom: 72,
         overflowY: "auto",
         height: "100%",
-        scrollbarWidth: "none", // Firefox
-        msOverflowStyle: "none", // IE/Edge
+        scrollbarWidth: "none",
+        msOverflowStyle: "none",
+        paddingBottom: 120,
+        position: "relative",
       }}
       className="hide-scrollbar"
     >
-      {activeMessages.map((msg, idx) => {
+      {/* Sticky date label */}
+      {stickyDate && (
+        <div
+          style={{
+            position: "sticky",
+            top: 0,
+            zIndex: 10,
+            background: "rgba(255,255,255,0.95)",
+            textAlign: "center",
+            padding: "4px 0 2px 0",
+            fontWeight: 500,
+            fontSize: 13,
+            color: "#444",
+            borderBottom: "1px solid #eee",
+          }}
+        >
+          {stickyDate}
+        </div>
+      )}
+      {groupedMessages.map((item, idx) => {
+        if (item.type === "separator") {
+          return (
+            <div
+              className="date-separator"
+              data-label={item.label}
+              key={item.key}
+              style={{
+                textAlign: "center",
+                margin: "16px 0 8px 0",
+                position: "relative",
+                zIndex: 2,
+              }}
+            >
+              <span
+                style={{
+                  background: "#e9ecef",
+                  color: "#555",
+                  borderRadius: 8,
+                  padding: "2px 12px",
+                  fontSize: 12,
+                  fontWeight: 500,
+                  display: "inline-block",
+                  boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
+                }}
+              >
+                {item.label}
+              </span>
+            </div>
+          );
+        }
+
+        // ...your existing message rendering code, using item instead of msg...
+        const msg = item;
         const isSent = msg.sent || msg.isSent || msg.user === (activeChat?.user || "me");
         const hasUpdate =
           msg.scheduleType !== "now" &&
@@ -50,7 +167,7 @@ function ChatMessages({ activeMessages, formatWhatsAppTime, onTogglePaused, acti
         const messagePreviewEllipsis = (msg.text || msg.message || "").length > 20 ? "..." : "";
 
         return (
-          <React.Fragment key={msg._id || idx}>
+          <React.Fragment key={msg.key}>
             {/* Main message bubble */}
             <div
               className={`d-flex mb-1 ${isSent ? "justify-content-end" : "justify-content-start"}`}
@@ -287,20 +404,19 @@ function ChatMessages({ activeMessages, formatWhatsAppTime, onTogglePaused, acti
           </React.Fragment>
         );
       })}
+      <style>
+        {`
+          .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+          }
+          .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+          }
+        `}
+      </style>
     </div>
   );
 }
 
 export default ChatMessages;
-
-<style>
-  {`
-    .hide-scrollbar::-webkit-scrollbar {
-      display: none;
-    }
-    .hide-scrollbar {
-      -ms-overflow-style: none;  /* IE and Edge */
-      scrollbar-width: none;     /* Firefox */
-    }
-  `}
-</style>
