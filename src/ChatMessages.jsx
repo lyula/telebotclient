@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from "react";
-ld 
+
 function formatDateLabel(date) {
   const now = new Date();
   const msgDate = new Date(date);
