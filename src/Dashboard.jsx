@@ -767,7 +767,7 @@ function Dashboard({ user, onLogout }) {
                             <option value="every_day">Every Day</option>
                             <option value="custom">Custom</option>
                           </select>
-                          {interval === "custom" && (
+                          {interval === "custom" ? (
                             <div className="d-flex align-items-center gap-2 mt-1">
                               <input
                                 type="number"
@@ -789,6 +789,21 @@ function Dashboard({ user, onLogout }) {
                                 <option value="hours">Hours</option>
                                 <option value="days">Days</option>
                               </select>
+                              <span>Repeat</span>
+                              <input
+                                type="number"
+                                min="1"
+                                className="form-control rounded-pill"
+                                style={{ maxWidth: "100px" }}
+                                placeholder="Times"
+                                value={repeatCount}
+                                onChange={(e) => setRepeatCount(e.target.value)}
+                                required
+                              />
+                              <span>times</span>
+                            </div>
+                          ) : (
+                            <div className="d-flex align-items-center gap-2 mt-1">
                               <span>Repeat</span>
                               <input
                                 type="number"

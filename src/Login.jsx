@@ -32,12 +32,16 @@ function Login({ switchToRegister, onLogin }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.message || "Login failed");
       // Call parent onLogin with user data or token
       onLogin(data);
     } catch (err) {
-      setError(err.message);
+      setError(err.message === "Failed to fetch"
+        ? "Could not connect to server. Please try again in a few seconds."
+        : err.message);
+      // Clear error after 3 seconds
+      setTimeout(() => setError(""), 3000);
     } finally {
       setLoading(false);
       setDots("");
