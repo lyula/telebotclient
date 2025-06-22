@@ -277,7 +277,6 @@ function Dashboard({ user, onLogout }) {
           intervalValue = Number(customIntervalValue);
           intervalUnit = customIntervalUnit;
         } else {
-          // Map preset intervals to value/unit
           const presetMap = {
             every_minute: { value: 1, unit: "minutes" },
             every_3_minutes: { value: 3, unit: "minutes" },
@@ -289,6 +288,10 @@ function Dashboard({ user, onLogout }) {
             every_day: { value: 1, unit: "days" },
           };
           const preset = presetMap[interval];
+          if (!preset) {
+            setNotification({ show: true, message: "Please select a valid interval option." });
+            return;
+          }
           intervalValue = preset.value;
           intervalUnit = preset.unit;
         }
