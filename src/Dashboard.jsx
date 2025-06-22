@@ -272,7 +272,6 @@ function Dashboard({ user, onLogout }) {
       };
 
       if (scheduleType === "interval") {
-        // Use custom interval if selected, otherwise map preset to value/unit
         let intervalValue, intervalUnit;
         if (interval === "custom") {
           intervalValue = Number(customIntervalValue);
@@ -692,7 +691,7 @@ function Dashboard({ user, onLogout }) {
             className="flex-grow-1 p-3 d-flex flex-column gap-2"
             style={{
               overflow: "auto",
-              paddingBottom: "180px", // Increased for input/scheduler height
+              paddingBottom: window.innerWidth < 768 ? "340px" : "260px",
             }}
           >
             <ChatMessages
