@@ -133,10 +133,15 @@ function ChatMessages({ activeMessages, formatWhatsAppTime, onTogglePaused, acti
                         <b>
                           {(msg.customIntervalValue !== undefined && msg.customIntervalValue !== null && msg.customIntervalValue !== "")
                             ? msg.customIntervalValue
-                            : "null"}{" "}
+                            : (msg.intervalValue !== undefined && msg.intervalValue !== null && msg.intervalValue !== "")
+                              ? msg.intervalValue
+                              : "null"}
+                          {" "}
                           {(msg.customIntervalUnit !== undefined && msg.customIntervalUnit !== null && msg.customIntervalUnit !== "")
                             ? msg.customIntervalUnit
-                            : "null"}
+                            : (msg.intervalUnit !== undefined && msg.intervalUnit !== null && msg.intervalUnit !== "")
+                              ? msg.intervalUnit
+                              : "null"}
                         </b>
                         . It will be sent <b>{typeof msg.repeatCount === "number" ? msg.repeatCount : "null"}</b> times.
                         <br />
