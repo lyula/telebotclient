@@ -30,7 +30,17 @@ function ChatMessages({ activeMessages, formatWhatsAppTime, onTogglePaused, acti
   }
 
   return (
-    <div ref={chatContainerRef} style={{ marginBottom: 72, overflowY: "auto", height: "100%" }}>
+    <div
+      ref={chatContainerRef}
+      style={{
+        marginBottom: 72,
+        overflowY: "auto",
+        height: "100%",
+        scrollbarWidth: "none", // Firefox
+        msOverflowStyle: "none", // IE/Edge
+      }}
+      className="hide-scrollbar"
+    >
       {activeMessages.map((msg, idx) => {
         const isSent = msg.sent || msg.isSent || msg.user === (activeChat?.user || "me");
         const hasUpdate =
@@ -283,3 +293,15 @@ function ChatMessages({ activeMessages, formatWhatsAppTime, onTogglePaused, acti
 }
 
 export default ChatMessages;
+
+<style>
+  {`
+    .hide-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .hide-scrollbar {
+      -ms-overflow-style: none;  /* IE and Edge */
+      scrollbar-width: none;     /* Firefox */
+    }
+  `}
+</style>
