@@ -236,7 +236,7 @@ function ChatMessages({ activeMessages, formatWhatsAppTime, onTogglePaused, acti
                 }}
               >
                 <button
-                  className={`border-0 bg-transparent p-0${refreshing ? " refresh-anim" : ""}`}
+                  className="border-0 bg-transparent p-0"
                   title="Refresh"
                   style={{
                     borderRadius: "50%",
@@ -252,23 +252,24 @@ function ChatMessages({ activeMessages, formatWhatsAppTime, onTogglePaused, acti
                     cursor: "pointer",
                   }}
                   onClick={() => {
-                    setRefreshing(false); // Reset state to allow re-trigger
+                    setRefreshing(false);
                     setTimeout(() => {
                       setRefreshing(true);
                       if (refreshTimeout.current) clearTimeout(refreshTimeout.current);
-                      refreshTimeout.current = setTimeout(() => setRefreshing(false), 350); // Faster spin
+                      refreshTimeout.current = setTimeout(() => setRefreshing(false), 350);
                       onManualRefresh();
-                    }, 10); // Small delay to force state change
+                    }, 10);
                   }}
                 >
                   <svg
+                    key={refreshing ? "spin" : "static"} // Force re-render on state change
                     width="16"
                     height="16"
                     fill="currentColor"
                     viewBox="0 0 24 24"
                     style={{
-                      transition: "transform 0.2s",
-                      transform: refreshing ? "rotate(360deg)" : "none",
+                      animation: refreshing ? "spin-refresh 0.35s linear" : "none",
+                      // Remove transition/transform here
                     }}
                   >
                     <path d="M17.65 6.35A7.95 7.95 0 0 0 12 4V1L7 6l5 5V7c1.93 0 3.68.78 4.95 2.05A7 7 0 1 1 5 12H3a9 9 0 1 0 14.65-5.65z"/>
@@ -276,9 +277,6 @@ function ChatMessages({ activeMessages, formatWhatsAppTime, onTogglePaused, acti
                 </button>
                 <style>
                   {`
-                    .refresh-anim svg {
-                      animation: spin-refresh 0.35s linear;
-                    }
                     @keyframes spin-refresh {
                       100% { transform: rotate(360deg);}
                     }
